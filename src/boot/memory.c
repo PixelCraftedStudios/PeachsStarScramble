@@ -50,12 +50,28 @@ void *get_segment_base_addr(s32 segment) {
     return (void *) (sSegmentTable[segment] | 0x80000000);
 }
 
+uintptr_t set_segment_rom_addr(s32 segment, void *addr) {
+    sSegmentROMTable[segment] = (uintptr_t) addr;
+    return sSegmentROMTable[segment];
+}
+
+void *get_segment_rom_addr(s32 segment) {
+    return (void *) sSegmentROMTable[segment];
+}
+
 void set_segment_size(s32 segment, size_t size) {
     sSegmentSizes[segment] = size;
 }
 
 size_t get_segment_size(s32 segment) {
     return sSegmentSizes[segment];
+}
+
+void set_segment(s32 segment, void *addr, void *srcStart, size_t size) {
+    set_segment_base_addr(segment, addr);
+    sSegmentROMTable[segment] = (uintptr_t) srcStart;
+    // set_segment_rom_addr(segment, srcStart);
+    set_segment_size(segment, size);
 }
 
 s32 is_addr_in_segment(void* addr, s32 segment) {
@@ -323,18 +339,14 @@ void *load_segment(s32 segment, u8 *srcStart, u8 *srcEnd, u32 side, u8 *bssStart
         addr = dynamic_dma_read(srcStart, srcEnd, side, TLB_PAGE_SIZE, ((uintptr_t)bssEnd - (uintptr_t)bssStart));
         if (addr != NULL) {
             u8 *realAddr = (u8 *)ALIGN((uintptr_t)addr, TLB_PAGE_SIZE);
-            set_segment_base_addr(segment, realAddr);
-            size_t size = ((srcEnd - srcStart) + ((uintptr_t)bssEnd - (uintptr_t)bssStart));
-            set_segment_size(segment, size);
-            sSegmentROMTable[segment] = (uintptr_t)srcStart;
+            size_t size = (((uintptr_t)srcEnd - (uintptr_t)srcStart) + ((uintptr_t)bssEnd - (uintptr_t)bssStart));
+            set_segment(segment, realAddr, srcStart, size);
             mapTLBPages((segment << 24), VIRTUAL_TO_PHYSICAL(realAddr), size, segment);
         }
     } else {
         addr = dynamic_dma_read(srcStart, srcEnd, side, 0, 0);
         if (addr != NULL) {
-            set_segment_base_addr(segment, addr);
-            sSegmentROMTable[segment] = (uintptr_t)srcStart;
-            set_segment_size(segment, (size_t)(srcEnd - srcStart));
+            set_segment(segment, addr, srcStart, (size_t)((uintptr_t)srcEnd - (uintptr_t)srcStart));
         }
     }
 #ifdef PUPPYPRINT_DEBUG
@@ -411,9 +423,7 @@ void *load_segment_decompress(s32 segment, u8 *srcStart, u8 *srcEnd) {
             decompress(compressed, dest);
 #endif
             osSyncPrintf("end decompress\n");
-            set_segment_base_addr(segment, dest);
-            sSegmentROMTable[segment] = (uintptr_t)srcStart;
-            set_segment_size(segment, *size);
+            set_segment(segment, dest, srcStart, *size);
             main_pool_free(compressed);
         }
     }

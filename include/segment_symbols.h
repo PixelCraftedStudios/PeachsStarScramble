@@ -2,6 +2,7 @@
 #define SEGMENT_SYMBOLS_H
 
 #ifndef NO_SEGMENTED_MEMORY
+
 #define DECLARE_SEGMENT_SIDE(name, type, side) \
     extern u8 _##name##Segment##type##side[];
 #define DECLARE_SEGMENT_IMPL(name, type) \

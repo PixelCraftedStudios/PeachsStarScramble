@@ -431,9 +431,7 @@ void render_init(void) {
  */
 void select_gfx_pool(s32 index) {
     gGfxPool = &gGfxPools[index];
-    set_segment_base_addr(SEGMENT_RENDER, gGfxPool->buffer);
-    sSegmentROMTable[SEGMENT_RENDER] = OS_K0_TO_PHYSICAL(gGfxPool->buffer);
-    set_segment_size(SEGMENT_RENDER, GFX_POOL_SIZE);
+    set_segment(SEGMENT_RENDER, gGfxPool->buffer, (void*)OS_K0_TO_PHYSICAL(gGfxPool->buffer), GFX_POOL_SIZE);
     gGfxSPTask = &gGfxPool->spTask;
     gDisplayListHead = gGfxPool->buffer;
     gGfxPoolEnd = (u8 *)(gGfxPool->buffer + GFX_POOL_SIZE);
@@ -729,9 +727,7 @@ void init_controllers(void) {
  */
 void setup_game_memory(void) {
     // Setup general Segment 0
-    set_segment_base_addr(SEGMENT_MAIN, (void *)RAM_START);
-    sSegmentROMTable[SEGMENT_MAIN] = (uintptr_t)_mainSegmentRomStart;
-    set_segment_size(SEGMENT_MAIN, ((uintptr_t)SEG_POOL_START - (uintptr_t)RAM_START)); // Is this correct?
+    set_segment(SEGMENT_MAIN, (void *)RAM_START, _mainSegmentRomStart, ((uintptr_t)SEG_POOL_START - (uintptr_t)RAM_START)); // Is the ROM address and size correct?
     // Create Mesg Queues
     osCreateMesgQueue(&gGfxVblankQueue, gGfxMesgBuf, ARRAY_COUNT(gGfxMesgBuf));
     osCreateMesgQueue(&gGameVblankQueue, gGameMesgBuf, ARRAY_COUNT(gGameMesgBuf));
@@ -742,9 +738,7 @@ void setup_game_memory(void) {
     gPhysicalFramebuffers[2] = VIRTUAL_TO_PHYSICAL(gFramebuffer2);
     // Setup Mario Animations
     gMarioAnimsMemAlloc = main_pool_alloc(MARIO_ANIMS_POOL_SIZE, MEMORY_POOL_LEFT);
-    set_segment_base_addr(SEGMENT_MARIO_ANIMS, (void *) gMarioAnimsMemAlloc);
-    sSegmentROMTable[SEGMENT_MARIO_ANIMS] = (uintptr_t)gMarioAnims;
-    set_segment_size(SEGMENT_MARIO_ANIMS, MARIO_ANIMS_POOL_SIZE);
+    set_segment(SEGMENT_MARIO_ANIMS, (void *)gMarioAnimsMemAlloc, gMarioAnims, MARIO_ANIMS_POOL_SIZE);
     setup_dma_table_list(&gMarioAnimsBuf, gMarioAnims, gMarioAnimsMemAlloc);
 #ifdef PUPPYPRINT_DEBUG
     set_segment_memory_printout(SEGMENT_MARIO_ANIMS, MARIO_ANIMS_POOL_SIZE);
@@ -752,9 +746,7 @@ void setup_game_memory(void) {
 #endif
     // Setup Demo Inputs List
     gDemoInputsMemAlloc = main_pool_alloc(DEMO_INPUTS_POOL_SIZE, MEMORY_POOL_LEFT);
-    set_segment_base_addr(SEGMENT_DEMO_INPUTS, (void *) gDemoInputsMemAlloc);
-    sSegmentROMTable[SEGMENT_DEMO_INPUTS] = (uintptr_t)gDemoInputs;
-    set_segment_size(SEGMENT_DEMO_INPUTS, DEMO_INPUTS_POOL_SIZE);
+    set_segment(SEGMENT_DEMO_INPUTS, (void *)gDemoInputsMemAlloc, gDemoInputs, DEMO_INPUTS_POOL_SIZE);
     setup_dma_table_list(&gDemoInputsBuf, gDemoInputs, gDemoInputsMemAlloc);
     // Setup Level Script Entry
     load_segment(SEGMENT_LEVEL_ENTRY, _entrySegmentRomStart, _entrySegmentRomEnd, MEMORY_POOL_LEFT, NULL, NULL);

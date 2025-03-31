@@ -78,8 +78,10 @@ extern struct MainPoolBlock *sPoolListHeadR;
 
 uintptr_t set_segment_base_addr(s32 segment, void *addr);
 void *get_segment_base_addr(s32 segment);
+void *get_segment_rom_addr(s32 segment);
 void set_segment_size(s32 segment, size_t size);
 size_t get_segment_size(s32 segment);
+void set_segment(s32 segment, void *addr, void *srcStart, size_t size);
 s32 is_addr_in_segment(void* addr, s32 segment);
 s32 get_segment_from_virtual_addr(void* addr);
 void *segmented_to_virtual(const void *addr);

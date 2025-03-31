@@ -157,7 +157,7 @@ void cs_draw_register_info_long(CSTextCoord_u32 charX, CSTextCoord_u32 line, Reg
     Word data = get_reg_val(reg.src, reg.idx, TRUE);
     const char* name = ((reg.src == REGS_CPU) ? regInfo->shortName : regInfo->name);
 
-    // FP is part of FPCSR.
+    // FC is part of FPCSR.
     if (reg.valInfo.type == REG_VAL_TYPE_CONDBIT) {
         name = "FC";
         data = ((Reg_FPR_31)data).C;

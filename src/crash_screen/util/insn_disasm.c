@@ -911,6 +911,7 @@ void add_reg_str(char** c, RegisterSources src, int idx, _Bool isBase) {
     *c += sprintf(*c, STR_COLOR_PREFIX"%s"STR_COLOR_PREFIX, color, str, gCSDefaultPrintColor);
 }
 
+
 static _Bool modify_pseudo_c_assignment_str(const char** formatStr, InsnData insn, MIPS_C_Pseudocodes pseudoC) {
     const char* s = NULL;
 
@@ -993,7 +994,7 @@ char* cs_insn_to_pseudo_c(InsnData insn, const char** comment) {
             modify_pseudo_c_assignment_str(&formatStr, insn, pseudoC);
         }
     }
-
+    
     if (*comment == NULL) {
         *comment = comment_from_insn(insn, info);
     }
