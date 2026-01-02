@@ -8,6 +8,18 @@
 #define MODEL_MARIO                            0x01        // mario_geo
 #define MODEL_LUIGI                            0x02        // unused
 
+/* CUSTOM MODELS 
+
+Peach Tell - 0xE4
+Shroomble -  0xE5
+
+*/
+#define MODEL_PEACH_TELL                  0xE4
+#define MODEL_SHROOMBLE                 0xE5
+
+
+
+
 /* Various static level geometry, the geo layout differs but terrain object presets treat them the same.*/
 
 #define MODEL_LEVEL_GEOMETRY_03                0x03
@@ -548,6 +560,7 @@
 #ifdef IA8_30FPS_COINS
 #define MODEL_SILVER_COIN                 0xE2        // silver_coin_geo
 #define MODEL_SILVER_COIN_NO_SHADOW       0xE3        // silver_coin_no_shadow_geo
+
 #endif
 
 // Menu Models (overwrites Level Geometry IDs)

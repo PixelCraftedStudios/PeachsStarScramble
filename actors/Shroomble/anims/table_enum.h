@@ -1,0 +1,3 @@
+enum ShroombleAnims {
+	SHROOMBLE_ANIM_ARMATUREACTION,
+};

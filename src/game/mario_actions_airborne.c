@@ -462,13 +462,14 @@ s32 act_double_jump(struct MarioState *m) {
     return FALSE;
 }
 
+
 s32 act_triple_jump(struct MarioState *m) {
     if (gSpecialTripleJump) {
         return set_mario_action(m, ACT_SPECIAL_TRIPLE_JUMP, 0);
     }
 
     if (m->input & INPUT_B_PRESSED) {
-        return set_mario_action(m, ACT_DIVE, 0);
+        return forwards_velocity_dive(m);
     }
 
     if (m->input & INPUT_Z_PRESSED) {
@@ -897,11 +898,25 @@ s32 act_steep_jump(struct MarioState *m) {
     return FALSE;
 }
 
+void forwards_velocity_dive(struct MarioState *m){
+        set_mario_action(m, ACT_DIVE, 0);
+        m->vel[1] = 30.0f;
+        m->forwardVel = 40.0f;
+        m->faceAngle[1] = m->intendedYaw;
+        play_sound_if_no_flag(m, SOUND_ACTION_THROW, MARIO_ACTION_SOUND_PLAYED);
+}
+
+
 s32 act_ground_pound(struct MarioState *m) {
     u32 stepResult;
     f32 yOffset;
 
     play_sound_if_no_flag(m, SOUND_ACTION_THROW, MARIO_ACTION_SOUND_PLAYED);
+
+    if(m->input & INPUT_B_PRESSED){
+        forwards_velocity_dive(m);
+        return FALSE;
+    }
 
     if (m->actionState == 0) {
         if (m->actionTimer < 10) {
@@ -1259,39 +1274,95 @@ s32 act_getting_blown(struct MarioState *m) {
     return FALSE;
 }
 
+void act_wall_slide(struct MarioState *m){
+
+        // Slowly slide down wall
+        m->vel[1] = approach_f32_symmetric(m->vel[1], -8.0f, 1.5f);
+
+        // Optional: slightly reduce forward velocity naturally
+        m->forwardVel = approach_f32_symmetric(m->forwardVel, 0.0f, 0.5f);
+
+        // Particle effect for sliding
+        if (m->vel[1] < -2.0f) {
+            m->particleFlags |= PARTICLE_DUST;
+            play_sound(SOUND_MOVING_TERRAIN_SLIDE, m->marioObj->header.gfx.cameraToObject);
+            
+
+
+            //wall jump
+            if (m->input & INPUT_A_PRESSED) {
+                m->vel[1] = 52.0f;              // wall kick upward boost
+                //m->faceAngle[1] += 0x8000;      // turn Mario around
+            set_mario_action(m, ACT_WALL_KICK_AIR, 0);
+            return;
+            }
+        }
+}
+
 s32 act_air_hit_wall(struct MarioState *m) {
+    // Drop held object immediately
     if (m->heldObj != NULL) {
         mario_drop_held_object(m);
     }
 
+    // Early wall kick window (just after hitting wall)
     if (++(m->actionTimer) <= 2) {
         if (m->input & INPUT_A_PRESSED) {
-            m->vel[1] = 52.0f;
-            m->faceAngle[1] += 0x8000;
+            m->vel[1] = 52.0f;              // wall kick upward boost
+            m->faceAngle[1] += 0x8000;      // turn Mario around
             return set_mario_action(m, ACT_WALL_KICK_AIR, 0);
         }
-    } else if (m->forwardVel >= 38.0f) {
+    } 
+    // Fast wall hit → backward knockback
+    else if (m->forwardVel >= 38.0f) {
         m->wallKickTimer = 5;
-        if (m->vel[1] > 0.0f) {
-            m->vel[1] = 0.0f;
-        }
-
-        m->particleFlags |= PARTICLE_VERTICAL_STAR;
+        if (m->vel[1] > 0.0f) m->vel[1] = 0.0f;
+        m->particleFlags |= PARTICLE_VERTICAL_STAR; // flashy hit effect
         return set_mario_action(m, ACT_BACKWARD_AIR_KB, 0);
-    } else {
-        m->wallKickTimer = 5;
-        if (m->vel[1] > 0.0f) {
-            m->vel[1] = 0.0f;
-        }
+    } 
+    // Moderate forward speed → wall slide style
 
-        if (m->forwardVel > 8.0f) {
-            mario_set_forward_vel(m, -8.0f);
+    else if (m->forwardVel > 8.0f && m->wall) {
+ 
+        
+        m->wallKickTimer = 5;
+        if((m->actionTimer) == 3){
+            m->faceAngle[1] += 0x8000;
         }
+        act_wall_slide(m);
+        
+    // Handle landing / air step
+    switch (perform_air_step(m, 0)) {
+        case AIR_STEP_LANDED:
+            set_mario_action(m, ACT_JUMP_LAND, 0);
+            break;
+        case AIR_STEP_HIT_LAVA_WALL:
+            lava_boost_on_wall(m);
+            break;
+    }
+
+    // Safety: wall gone → soft bonk
+    if (!m->wall) {
+        m->faceAngle[1] += 0x8000;
+        set_mario_action(m, ACT_SOFT_BONK, 0);
+        m->forwardVel = -2.0f;
+    }
+
+    // Animation
+    set_mario_animation(m, MARIO_ANIM_START_WALLKICK);
+    return FALSE;
+    }
+
+    // Soft bonk for very slow forward hits
+    else {
+        m->wallKickTimer = 5;
+        if (m->vel[1] > 0.0f) m->vel[1] = 0.0f;
+        if (m->forwardVel > 8.0f) mario_set_forward_vel(m, -8.0f);
         return set_mario_action(m, ACT_SOFT_BONK, 0);
     }
 
+    // Default animation if none of the above triggers
     set_mario_animation(m, MARIO_ANIM_START_WALLKICK);
-
     return TRUE;
 }
 

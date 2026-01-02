@@ -502,20 +502,19 @@ enum SoundBank {
 #define SOUND_OBJ_ENEMY_DEFEAT_SHRINK            /* 0x50744081 */ SOUND_ARG_LOAD(SOUND_BANK_OBJ,      0x74, 0x40, SOUND_DISCRETE)
 
 #define SOUND_AIR_BOWSER_SPIT_FIRE               /* 0x60000001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x00, 0x00, 0)
-#define SOUND_AIR_UNK01                          /* 0x60010001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x01, 0x00, 0) // ?, unused
-#define SOUND_AIR_LAKITU_FLY                     /* 0x60028001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x02, 0x80, 0)
-#define SOUND_AIR_LAKITU_FLY_HIGHPRIO            /* 0x6002FF01 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x02, 0xFF, 0)
-#define SOUND_AIR_AMP_BUZZ                       /* 0x60034001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x03, 0x40, 0)
-#define SOUND_AIR_BLOW_FIRE                      /* 0x60048001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x04, 0x80, 0)
-#define SOUND_AIR_BLOW_WIND                      /* 0x60044001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x04, 0x40, 0)
-#define SOUND_AIR_ROUGH_SLIDE                    /* 0x60050001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x05, 0x00, 0)
-#define SOUND_AIR_HEAVEHO_MOVE                   /* 0x60064001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x06, 0x40, 0)
-#define SOUND_AIR_UNK07                          /* 0x60070001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x07, 0x00, 0) // ?, unused
-#define SOUND_AIR_BOBOMB_LIT_FUSE                /* 0x60086001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x08, 0x60, 0)
-#define SOUND_AIR_HOWLING_WIND                   /* 0x60098001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x09, 0x80, 0)
-#define SOUND_AIR_CHUCKYA_MOVE                   /* 0x600A4001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x0A, 0x40, 0)
-#define SOUND_AIR_PEACH_TWINKLE                  /* 0x600B4001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x0B, 0x40, 0)
-#define SOUND_AIR_CASTLE_OUTDOORS_AMBIENT        /* 0x60104001 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x10, 0x40, 0)
+#define SOUND_AIR_LAKITU_FLY                     /* 0x60018000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x01, 0x80, 0)
+#define SOUND_AIR_LAKITU_FLY_HIGHPRIO            /* 0x6001FF00 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x01, 0xFF, 0)
+#define SOUND_AIR_AMP_BUZZ                       /* 0x60024000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x02, 0x40, 0)
+#define SOUND_AIR_BLOW_FIRE                      /* 0x60038000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x03, 0x80, 0)
+#define SOUND_AIR_BLOW_WIND                      /* 0x60034000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x03, 0x40, 0)
+#define SOUND_AIR_ROUGH_SLIDE                    /* 0x60040000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x04, 0x00, 0)
+#define SOUND_AIR_HEAVEHO_MOVE                   /* 0x60054000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x05, 0x40, 0)
+#define SOUND_AIR_UNK07                          /* 0x60060000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x06, 0x00, 0)
+#define SOUND_AIR_BOBOMB_LIT_FUSE                /* 0x60076000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x07, 0x60, 0)
+#define SOUND_AIR_HOWLING_WIND                   /* 0x60088000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x08, 0x80, 0)
+#define SOUND_AIR_CHUCKYA_MOVE                   /* 0x60094000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x09, 0x40, 0)
+#define SOUND_AIR_PEACH_TWINKLE                  /* 0x600A4000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x0A, 0x40, 0)
+#define SOUND_AIR_CASTLE_OUTDOORS_AMBIENT        /* 0x600F4000 */ SOUND_ARG_LOAD(SOUND_BANK_AIR,      0x0F, 0x40, 0)
 
 /* Menu Sound Effects */
 #define SOUND_MENU_CHANGE_SELECT                 /* 0x7000F881 */ SOUND_ARG_LOAD(SOUND_BANK_MENU,     0x00, 0xF8, SOUND_DISCRETE)

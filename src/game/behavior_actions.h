@@ -575,4 +575,10 @@ Gfx *geo_scale_bowser_key(s32 callContext, struct GraphNode *node, UNUSED Mat4 m
 extern struct WaterDropletParams gShallowWaterSplashDropletParams;
 extern struct WaterDropletParams gShallowWaterWaveDropletParams;
 
+
+void bhv_shroomble_init(void);
+void bhv_shroomble_update(void);
+
+
+
 #endif // BEHAVIOR_ACTIONS_H

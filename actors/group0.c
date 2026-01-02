@@ -30,3 +30,8 @@
 #include "src/s2d_engine/s2d_config.h"
 #include FONT_C_FILE
 #endif
+#include "peach_tell/model.inc.c"
+#include "peach_tell/collision.inc.c"
+#include "Shroomble/model.inc.c"
+#include "Shroomble/anims/data.inc.c"
+#include "Shroomble/anims/table.inc.c"

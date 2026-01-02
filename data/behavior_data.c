@@ -5112,6 +5112,43 @@ const BehaviorScript bhvGoomba[] = {
     END_LOOP(),
 };
 
+const BehaviorScript bhvShroomble[] = {
+    BEGIN(OBJ_LIST_PUSHABLE),
+
+    // Basic object flags
+    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_ANGLE_TO_MARIO 
+                   | OBJ_FLAG_COMPUTE_DIST_TO_MARIO
+                   | OBJ_FLAG_SET_FACE_YAW_TO_MOVE_YAW
+                   | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+
+    // Place on floor
+    DROP_TO_FLOOR(),
+
+    // No animations, skip LOAD_ANIMATIONS
+    // SET_HOME for reference point
+    SET_HOME(),
+
+    // Simple physics: radius 40, gravity -400, bounciness -50, drag 1000, friction 1000, buoyancy 0
+    SET_OBJ_PHYSICS(
+        40,   // wall hitbox radius
+        -400, // gravity
+        -50,  // bounciness
+        1000, // drag strength
+        1000, // friction
+        0,    // buoyancy
+        0, 0
+    ),
+
+    // Initialization function
+    CALL_NATIVE(bhv_shroomble_init),
+
+    // Main loop
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_shroomble_update),
+    END_LOOP(),
+};
+
+
 const BehaviorScript bhvGoombaTripletSpawner[] = {
     BEGIN(OBJ_LIST_PUSHABLE),
     OR_INT(oFlags, (OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),

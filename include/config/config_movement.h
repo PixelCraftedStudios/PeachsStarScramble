@@ -41,7 +41,7 @@
 /**
  * Disables fall damage.
  */
-#define NO_FALL_DAMAGE
+//#define NO_FALL_DAMAGE
 
 /**
  * Disables the scream that mario makes when falling off a great height (this is separate from actual fall damage).
@@ -71,7 +71,7 @@
 /**
  * Prevents Mario from losing his cap.
  */
-// #define PREVENT_CAP_LOSS
+#define PREVENT_CAP_LOSS
 
 /**
  * Uses Shindou's pole behavior.
@@ -86,7 +86,7 @@
 /**
  * Enables the ability to hold Z while twirling to descend faster.
  */
-// #define Z_TWIRL
+#define Z_TWIRL
 
 /**
  * Disables bonks when ground pounding next to a wall.
@@ -106,7 +106,7 @@
 /**
  * The maximum angle the player can wall kick, in degrees. 0..90. To allow 45 degree wall kicks, you must supply `46` to allow 45 and under.
  */
-#define WALL_KICK_DEGREES 45
+#define WALL_KICK_DEGREES 46
 
 /**
  * Makes Mario unable to ledge grab steep slopes to prevent false ledge grabs.

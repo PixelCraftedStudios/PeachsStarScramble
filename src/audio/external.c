@@ -2491,7 +2491,7 @@ void play_race_fanfare(void) {
  * Called from threads: thread5_game_loop
  */
 void play_toads_jingle(void) {
-    seq_player_play_sequence(SEQ_PLAYER_ENV, SEQ_EVENT_TOAD_MESSAGE, 0);
+    seq_player_play_sequence(SEQ_PLAYER_ENV, SEQ_EVENT_CUTSCENE_LAKITU, 0);
     sBackgroundMusicMaxTargetVolume = TARGET_VOLUME_IS_PRESENT_FLAG | 20;
 #if defined(VERSION_EU) || defined(VERSION_SH)
     D_EU_80300558 = 2;
