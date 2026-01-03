@@ -32,6 +32,3 @@
 #endif
 #include "peach_tell/model.inc.c"
 #include "peach_tell/collision.inc.c"
-#include "Shroomble/model.inc.c"
-#include "Shroomble/anims/data.inc.c"
-#include "Shroomble/anims/table.inc.c"

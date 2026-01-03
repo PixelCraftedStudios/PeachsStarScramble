@@ -89,6 +89,5 @@ extern const Gfx white_particle_small_unused_dl[];
 
 #include "peach_tell/geo_header.h"
 #include "peach_tell/collision_header.h"
-#include "Shroomble/geo_header.h"
-#include "Shroomble/anim_header.h"
+
 #endif
