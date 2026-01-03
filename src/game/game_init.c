@@ -845,13 +845,20 @@ void thread5_game_loop(UNUSED void *arg) {
 #endif
         gGlobalTimer++;
         }
+/*
+        OPTIONAL: Disable 60fps on Ares and Console
 
         if (gEmulator & (EMU_CONSOLE|EMU_ARES)) {
             sSingleThreaded = FALSE;
-            if (gEmulator & EMU_ARES) {
+            
+            if (gEmulator/ & EMU_ARES) {
                 sFrameCap60 = FALSE; // Ares flickers at 60HZ for some reason
             }
         }
+
+
+*/
+
 
         if (!sVideoThreadStarted) {
             sVideoThreadStarted=TRUE;
