@@ -17,6 +17,15 @@
 
 #include "config.h"
 
+void forwards_velocity_dive(struct MarioState *m){
+        set_mario_action(m, ACT_DIVE, 0);
+        m->vel[1] = 30.0f;
+        m->forwardVel = 40.0f;
+        m->faceAngle[1] = m->intendedYaw;
+        play_sound_if_no_flag(m, SOUND_ACTION_THROW, MARIO_ACTION_SOUND_PLAYED);
+}
+
+
 void play_flip_sounds(struct MarioState *m, s16 frame1, s16 frame2, s16 frame3) {
     s32 animFrame = m->marioObj->header.gfx.animInfo.animFrame;
     if (animFrame == frame1 || animFrame == frame2 || animFrame == frame3) {
@@ -469,7 +478,7 @@ s32 act_triple_jump(struct MarioState *m) {
     }
 
     if (m->input & INPUT_B_PRESSED) {
-        return forwards_velocity_dive(m);
+        forwards_velocity_dive(m);
     }
 
     if (m->input & INPUT_Z_PRESSED) {
@@ -898,13 +907,6 @@ s32 act_steep_jump(struct MarioState *m) {
     return FALSE;
 }
 
-void forwards_velocity_dive(struct MarioState *m){
-        set_mario_action(m, ACT_DIVE, 0);
-        m->vel[1] = 30.0f;
-        m->forwardVel = 40.0f;
-        m->faceAngle[1] = m->intendedYaw;
-        play_sound_if_no_flag(m, SOUND_ACTION_THROW, MARIO_ACTION_SOUND_PLAYED);
-}
 
 
 s32 act_ground_pound(struct MarioState *m) {
