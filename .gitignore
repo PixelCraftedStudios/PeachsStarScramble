@@ -2149,6 +2149,7 @@ lib/libs2d_engine.a
 
 # :Zone_Identifier files
 *Zone.Identifier
+*Copy.Identifier
 
 # user-specific config file
 include/config/config_local.h
