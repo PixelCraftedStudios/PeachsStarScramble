@@ -3,6 +3,7 @@
 
 #define MODEL_NONE                             0x00
 
+
 /* Global models that are loaded for every level */
 
 #define MODEL_MARIO                            0x01        // mario_geo
@@ -11,13 +12,11 @@
 /* CUSTOM MODELS 
 
 Peach Tell - 0xE4
-Shroomble -  0xE5
+Bouncing Shroom -  0xE5
 
 */
 #define MODEL_PEACH_TELL                  0xE4
-#define MODEL_SHROOMBLE                 0xE5
-
-
+#define MODEL_BOUNCINGSHROOM              0xE5
 
 
 /* Various static level geometry, the geo layout differs but terrain object presets treat them the same.*/

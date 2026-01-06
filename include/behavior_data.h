@@ -543,8 +543,7 @@ extern const BehaviorScript bhvUnusedFakeStar[];
 
 /*CUSTOM BHV*/
 
-extern const BehaviorScript bhvShroomble[];
-
+extern const BehaviorScript bhvbouncingShroom[];
 /*CUSTOM BHV*/
 
 #endif // BEHAVIOR_DATA_H

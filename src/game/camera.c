@@ -15,6 +15,7 @@
 #include "level_update.h"
 #include "ingame_menu.h"
 #include "mario_actions_cutscene.h"
+#include "mario.h"
 #include "save_file.h"
 #include "object_helpers.h"
 #include "print.h"
@@ -29,6 +30,7 @@
 #include "puppyprint.h"
 #include "profiling.h"
 #include "frame_lerp.h"
+#include <stdio.h>
 
 #define CBUTTON_MASK (U_CBUTTONS | D_CBUTTONS | L_CBUTTONS | R_CBUTTONS)
 
@@ -2870,13 +2872,122 @@ void update_lakitu(struct Camera *c) {
     frameLerp_cache_pos(gLakituState.focus,gLakituState.cacheFoc,gLakituState.cacheVideoFoc);
 }
 
+
+#include "levels/bob/header.h"
+#include "levels/castle_grounds/header.h"
+
+// ---------- Cutscene state ----------
+static u8 sCutsceneActive = FALSE;
+static CustomCutsceneID sCurrentCutscene = CUSTOM_CUTSCENE_NONE;
+
+// Track which cutscenes have already played
+static u8 sCompletedCutscenes[CUSTOM_CUTSCENE_MAX] = { FALSE }; 
+
+static s16 sCamSeg = 0;
+static f32 sCamProg = 0.f;
+static s16 sFocSeg = 0;
+static f32 sFocProg = 0.f;
+static s16 sEndTimer = 0;
+
+// Spline struct
+struct CustomCutsceneSpline {
+    struct CutsceneSplinePoint *camSpline;
+    struct CutsceneSplinePoint *focSpline;
+};
+
+// ---------- Cutscene registry ----------
+static struct CustomCutsceneSpline sCustomCutscenes[CUSTOM_CUTSCENE_MAX] = {
+    [CUSTOM_CUTSCENE_MH] = {
+        .camSpline = bob_area_1_spline_mh_cam,
+        .focSpline = bob_area_1_spline_mh_foc,
+    },
+    [CUSTOM_CUTSCENE_COURTYARD] = {
+        .camSpline = castle_grounds_area_1_spline_Cutscene,
+        .focSpline = castle_grounds_area_1_spline_Focus,
+    },
+};
+
+// ---------- Internal helpers ----------
+static void reset_cutscene_state(void) {
+    sCamSeg = sFocSeg = 0;
+    sCamProg = sFocProg = 0.f;
+    sEndTimer = 0;
+    sCutsceneActive = TRUE;
+}
+
+// ---------- Public API ----------
+void StartCutscene(CustomCutsceneID id) {
+    // Check if camera exists, if one is active, or IF THIS ID WAS ALREADY PLAYED
+    if (!gCamera || sCutsceneActive)
+        return;
+
+    if (id <= CUSTOM_CUTSCENE_NONE || id >= CUSTOM_CUTSCENE_MAX)
+        return;
+
+    // Only start if it hasn't been completed yet
+    if (sCompletedCutscenes[id])
+        return;
+
+    sCurrentCutscene = id;
+    reset_cutscene_state();
+
+    transition_to_camera_mode(gCamera, CAMERA_MODE_CUTSCENE, 5);
+}
+
+// ---------- Cutscene tick / update ----------
+void cutscene_custom_entry(void) {
+    if (!gCamera || !sCutsceneActive) return;
+    struct MarioState *marioState = &gMarioStates[0];
+    struct Camera *c = gCamera;
+    c->cutscene = 1;
+
+    struct CustomCutsceneSpline *cs = &sCustomCutscenes[sCurrentCutscene];
+    set_mario_action(marioState, ACT_UNUSED_DEATH_EXIT, 0);
+    // Move camera along spline
+    u8 camDone = move_point_along_spline(
+        gLakituState.goalPos,
+        segmented_to_virtual(cs->camSpline),
+        &sCamSeg, &sCamProg
+    );
+
+    // Move focus along spline
+    move_point_along_spline(
+        gLakituState.goalFocus,
+        segmented_to_virtual(cs->focSpline),
+        &sFocSeg, &sFocProg
+    );
+
+    if (camDone) {
+        // MARK AS COMPLETED so it can't be started again
+        sCompletedCutscenes[sCurrentCutscene] = TRUE;
+
+        sCurrentCutscene = CUSTOM_CUTSCENE_NONE;
+        sCutsceneActive = FALSE;
+        
+        sCamSeg = 0; sFocSeg = 0;
+        sCamProg = 0.f; sFocProg = 0.f;
+        set_mario_action(marioState, ACT_IDLE, 0);
+        set_camera_mode(c, CAMERA_MODE_8_DIRECTIONS, 1);
+        c->cutscene = 0;
+    }
+}
+/*END OF CUTSCENES*/
+
+
 /**
  * The main camera update function.
  * Gets controller input, checks for cutscenes, handles mode changes, and moves the camera
  */
 void update_camera(struct Camera *c) {
+    if (c->mode == CAMERA_MODE_CUTSCENE) {
+        cutscene_custom_entry();
+        //return;
+    }
     PROFILER_GET_SNAPSHOT_TYPE(PROFILER_DELTA_COLLISION);
     gCamera = c;
+    
+
+
     update_camera_hud_status(c);
     if (c->cutscene == CUTSCENE_NONE
 #ifdef PUPPYCAM
@@ -2945,6 +3056,9 @@ void update_camera(struct Camera *c) {
             }
         }
     }
+
+
+
     // If not in a cutscene, do mode processing
     if (c->cutscene == CUTSCENE_NONE) {
         sYawSpeed = 0x400;
@@ -3027,7 +3141,9 @@ void update_camera(struct Camera *c) {
                 case CAMERA_MODE_SPIRAL_STAIRS:
                     mode_spiral_stairs_camera(c);
                     break;
+
             }
+            
         }
     }
 #ifdef PUPPYCAM
@@ -3119,7 +3235,10 @@ void update_camera(struct Camera *c) {
 #endif
     gLakituState.lastFrameAction = sMarioCamState->action;
     profiler_update(PROFILER_TIME_CAMERA, profiler_get_delta(PROFILER_DELTA_COLLISION) - first);
+    
 }
+
+
 
 /**
  * Reset all the camera variables to their arcane defaults
@@ -5867,9 +5986,7 @@ struct CameraTrigger sCamSL[] = {
  * tunnel. Both sides achieve their effect by editing the camera yaw.
  */
 struct CameraTrigger sCamTHI[] = {
-    { 1, cam_thi_move_cam_through_tunnel, -4609, -2969, 6448, 100, 300, 300, 0 },
-    { 1, cam_thi_look_through_tunnel,     -4809, -2969, 6448, 100, 300, 300, 0 },
-    NULL_TRIGGER
+	NULL_TRIGGER
 };
 
 /**
@@ -6070,9 +6187,12 @@ struct CameraTrigger sCamBBH[] = {
  *
  * Each table is terminated with NULL_TRIGGER
  */
+
+
 struct CameraTrigger sCamCastleGrounds[] = {
 	NULL_TRIGGER
 };
+
 struct CameraTrigger *sCameraTriggers[LEVEL_COUNT + 1] = {
     NULL,
     #include "levels/level_defines.h"
@@ -6930,6 +7050,7 @@ void cutscene_ending_reset_spline(UNUSED struct Camera *c) {
     cutscene_reset_spline();
 }
 
+
 /**
  * Follow sEndingFlyToWindowPos/Focus up to the window.
  */
@@ -7091,6 +7212,8 @@ void cutscene_ending_kiss_here_we_go(struct Camera *c) {
     approach_vec3f_asymptotic(c->pos, pos, 0.2f, 0.1f, 0.2f);
     approach_vec3f_asymptotic(c->focus, foc, 0.2f, 0.1f, 0.2f);
 }
+
+
 
 /**
  * Peach kisses Mario on the nose.
@@ -10414,7 +10537,7 @@ u8 sZoomOutAreaMasks[] = {
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 0, 0, 0, 0), // CASTLE_INSIDE  | HMC
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 1, 0, 0), // SSL            | BOB
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // SL             | WDW
-	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 1, 0, 0), // JRB            | THI
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // JRB            | THI
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // TTC            | RR
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // CASTLE_GROUNDS | BITDW
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // VCUTM          | BITFS

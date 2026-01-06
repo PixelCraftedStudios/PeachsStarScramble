@@ -1,0 +1,16 @@
+extern const GeoLayout bouncingShroom_geo[];
+extern u8 bouncingShroom_dirt_ci4[];
+extern u8 bouncingShroom_dirt_pal_rgba16[];
+extern u8 bouncingShroom_mush_ci8[];
+extern u8 bouncingShroom_mush_pal_rgba16[];
+extern Vtx bouncingShroom_Geometry1_mesh_layer_1_vtx_cull[8];
+extern Vtx bouncingShroom_Geometry1_mesh_layer_1_vtx_0[86];
+extern Gfx bouncingShroom_Geometry1_mesh_layer_1_tri_0[];
+extern Vtx bouncingShroom_Geometry1_mesh_layer_1_vtx_1[57];
+extern Gfx bouncingShroom_Geometry1_mesh_layer_1_tri_1[];
+extern Gfx mat_bouncingShroom_f3dlite_material[];
+extern Gfx mat_revert_bouncingShroom_f3dlite_material[];
+extern Gfx mat_bouncingShroom_f3dlite_material_001[];
+extern Gfx mat_revert_bouncingShroom_f3dlite_material_001[];
+extern Gfx bouncingShroom_Geometry1_mesh_layer_1[];
+extern Gfx bouncingShroom_final_revert_mesh_layer_1[];

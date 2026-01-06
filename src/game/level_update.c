@@ -1005,6 +1005,8 @@ void basic_update(void) {
 
     if (gCurrentArea != NULL) {
         update_camera(gCurrentArea->camera);
+
+
     }
 }
 
@@ -1338,11 +1340,32 @@ s32 init_level(void) {
 }
 
 /**
- * Initialize the current level if initOrUpdate is 0, or update the level if it is 1.
+ * Initialize the current level if initOrUpdate is 0, or update the level if it is 1. And setup the cutscene engine
  */
+void ManageCutscenes(s16 initOrUpdate){
+    if (initOrUpdate == 1) { // UPDATE_LEVEL
+    switch (gCurrLevelNum) {
+        case LEVEL_CASTLE_GROUNDS:
+            StartCutscene(CUSTOM_CUTSCENE_COURTYARD);
+            break;
+
+        case LEVEL_BOB:
+            StartCutscene(CUSTOM_CUTSCENE_MH);
+            break;
+
+
+        default:
+            // do nothing
+            break;
+    }
+    }
+}
+
 s32 lvl_init_or_update(s16 initOrUpdate, UNUSED s32 unused) {
+    ManageCutscenes(initOrUpdate);
     return (initOrUpdate ? update_level() : init_level());
 }
+
 
 #if MULTILANG
 void load_language_text(void) {
@@ -1413,6 +1436,8 @@ s32 lvl_set_current_level(UNUSED s16 initOrUpdate, s32 levelNum) {
     if (gCurrCourseNum > COURSE_STAGES_MAX || warpCheckpointActive) {
         return FALSE;
     }
+	if (gCurrLevelNum == LEVEL_THI) return 0;
+	if (gCurrLevelNum == LEVEL_BOB) return 0;
 
     return !gDebugLevelSelect;
 }

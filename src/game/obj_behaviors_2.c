@@ -753,7 +753,7 @@ static void treat_far_home_as_mario(f32 threshold) {
 #include "behaviors/swoop.inc.c"
 #include "behaviors/fly_guy.inc.c"
 #include "behaviors/goomba.inc.c"
-#include "behaviors/shroomble.inc.c"
+
 #include "behaviors/chain_chomp.inc.c" // TODO: chain_chomp_sub_act_lunge documentation
 #include "behaviors/wiggler.inc.c"     // TODO
 #include "behaviors/spiny.inc.c"
@@ -786,6 +786,10 @@ static void treat_far_home_as_mario(f32 threshold) {
 #include "behaviors/haunted_chair.inc.c"
 #include "behaviors/mad_piano.inc.c"
 #include "behaviors/flying_bookend_switch.inc.c"
+
+
+#include "behaviors/bouncingShroom.inc.c"
+
 
 /**
  * Used by bowser, fly guy, piranha plant, and fire spitters.

@@ -576,8 +576,7 @@ extern struct WaterDropletParams gShallowWaterSplashDropletParams;
 extern struct WaterDropletParams gShallowWaterWaveDropletParams;
 
 
-void bhv_shroomble_init(void);
-void bhv_shroomble_update(void);
+void bhv_bouncingShroom_loop(void);
 
 
 

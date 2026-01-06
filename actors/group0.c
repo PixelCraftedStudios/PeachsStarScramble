@@ -32,3 +32,5 @@
 #endif
 #include "peach_tell/model.inc.c"
 #include "peach_tell/collision.inc.c"
+#include "bouncingShroom/collision.inc.c"
+#include "bouncingShroom/model.inc.c"

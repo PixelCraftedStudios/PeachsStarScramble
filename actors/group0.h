@@ -90,4 +90,6 @@ extern const Gfx white_particle_small_unused_dl[];
 #include "peach_tell/geo_header.h"
 #include "peach_tell/collision_header.h"
 
+#include "bouncingShroom/collision_header.h"
+#include "bouncingShroom/geo_header.h"
 #endif

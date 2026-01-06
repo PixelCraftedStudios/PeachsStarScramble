@@ -10,7 +10,7 @@ const GeoLayout bob_area_1_geo[] = {
 		GEO_OPEN_NODE(),
 			GEO_DISPLAY_LIST(LAYER_OPAQUE, bob_dl_final_revert_mesh_layer_1),
 		GEO_CLOSE_NODE(),
-		GEO_TRANSLATE_NODE_WITH_DL(LAYER_TRANSPARENT, -623, -644, 3786, bob_dl_Water_Box_Mesh_mesh_layer_5),
+		GEO_TRANSLATE_NODE_WITH_DL(LAYER_TRANSPARENT, -623, -644, 4149, bob_dl_Water_Box_Mesh_mesh_layer_5),
 		GEO_OPEN_NODE(),
 			GEO_DISPLAY_LIST(LAYER_TRANSPARENT, bob_dl_final_revert_mesh_layer_5),
 		GEO_CLOSE_NODE(),

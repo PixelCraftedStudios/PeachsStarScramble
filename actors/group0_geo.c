@@ -17,3 +17,4 @@
 #include "sparkle_animation/geo.inc.c"
 #include "mario/geo.inc.c"
 #include "peach_tell/geo.inc.c"
+#include "bouncingShroom/geo.inc.c"

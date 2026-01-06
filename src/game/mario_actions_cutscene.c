@@ -1198,19 +1198,9 @@ s32 act_death_exit(struct MarioState *m) {
 }
 
 s32 act_unused_death_exit(struct MarioState *m) {
-    if (launch_mario_until_land(m, ACT_FREEFALL_LAND_STOP, MARIO_ANIM_GENERAL_FALL, 0.0f)) {
-        play_sound(SOUND_MARIO_OOOF2, m->marioObj->header.gfx.cameraToObject);
-#ifdef ENABLE_LIVES
-        m->numLives--;
-#endif
-        // restore 7.75 units of health
-        m->healCounter = 31;
+    if(m != NULL){
+        //nothing
     }
-    // one unit of health
-    m->health = 0x0100;
-#ifdef BREATH_METER
-    m->breath = 0x880;
-#endif
     return FALSE;
 }
 
