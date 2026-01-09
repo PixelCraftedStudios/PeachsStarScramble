@@ -1,0 +1,10 @@
+extern const GeoLayout bouncePad_geo[];
+extern u8 bouncePad_jumplmao_ci8[];
+extern u8 bouncePad_jumplmao_pal_rgba16[];
+extern Vtx bouncePad_Circle_mesh_layer_1_vtx_cull[8];
+extern Vtx bouncePad_Circle_mesh_layer_1_vtx_0[106];
+extern Gfx bouncePad_Circle_mesh_layer_1_tri_0[];
+extern Gfx mat_bouncePad_f3dlite_material_009[];
+extern Gfx mat_revert_bouncePad_f3dlite_material_009[];
+extern Gfx bouncePad_Circle_mesh_layer_1[];
+extern Gfx bouncePad_final_revert_mesh_layer_1[];

@@ -121,7 +121,7 @@
 /**
  * Disables BLJs and crushes SimpleFlips's dreams.
  */
-#define DISABLE_BLJ
+//#define DISABLE_BLJ
 
 /**
  * Re-enables upwarping when entering water. Forces you to only enter water from the top.

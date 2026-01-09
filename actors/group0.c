@@ -34,3 +34,5 @@
 #include "peach_tell/collision.inc.c"
 #include "bouncingShroom/collision.inc.c"
 #include "bouncingShroom/model.inc.c"
+#include "bouncePad/collision.inc.c"
+#include "bouncePad/model.inc.c"

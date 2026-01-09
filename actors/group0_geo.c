@@ -18,3 +18,4 @@
 #include "mario/geo.inc.c"
 #include "peach_tell/geo.inc.c"
 #include "bouncingShroom/geo.inc.c"
+#include "bouncePad/geo.inc.c"
