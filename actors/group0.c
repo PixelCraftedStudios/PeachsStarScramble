@@ -36,3 +36,7 @@
 #include "bouncingShroom/model.inc.c"
 #include "bouncePad/collision.inc.c"
 #include "bouncePad/model.inc.c"
+#include "shroomBoss/collision.inc.c"
+#include "shroomBoss/model.inc.c"
+#include "shroomBoss/anims/data.inc.c"
+#include "shroomBoss/anims/table.inc.c"

@@ -94,4 +94,7 @@ extern const Gfx white_particle_small_unused_dl[];
 #include "bouncingShroom/geo_header.h"
 #include "bouncePad/collision_header.h"
 #include "bouncePad/geo_header.h"
+#include "shroomBoss/collision_header.h"
+#include "shroomBoss/geo_header.h"
+#include "shroomBoss/anim_header.h"
 #endif
