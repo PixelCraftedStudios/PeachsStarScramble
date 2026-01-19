@@ -46,6 +46,10 @@
 #include "seq_ids.h"
 #include "spawn_sound.h"
 
+#include "behaviors/bouncingShroom.inc.c"
+#include "behaviors/globalBehaviours.inc.c"
+
+
 //! TODO: remove static
 
 enum ObjPositionOperation {
@@ -788,7 +792,6 @@ static void treat_far_home_as_mario(f32 threshold) {
 #include "behaviors/flying_bookend_switch.inc.c"
 
 
-#include "behaviors/bouncingShroom.inc.c"
 
 
 /**

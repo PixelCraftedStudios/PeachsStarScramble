@@ -8,6 +8,7 @@
 void bhv_bouncingShroom_loop(void) {
     struct MarioState *m = gMarioState;
 
+
     // init squash storage
     if (o->oForwardVel == 0.0f) {
         o->oForwardVel = 1.0f;

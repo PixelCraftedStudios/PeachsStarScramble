@@ -81,7 +81,7 @@ static struct CutsceneEvent sMHEvents[] = {
         .spline = {
             bob_area_1_spline_mh_cam,
             bob_area_1_spline_mh_foc,
-            TIME(MODE_TIME, 40),
+            TIME(MODE_TIME, 60),
         },
     },
     // {
@@ -93,7 +93,7 @@ static struct CutsceneEvent sMHEvents[] = {
         .spline = {
             bob_area_1_spline_mh_cam2,
             bob_area_1_spline_mh_foc2,
-            TIME(MODE_TIME, 30),
+            TIME(MODE_TIME, 60),
         },
     },
     {

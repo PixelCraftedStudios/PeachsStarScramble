@@ -61,7 +61,6 @@ extern struct MainPoolBlock *sPoolListHeadR;
 struct MemoryPool *gEffectsMemoryPool;
 
 
-
 uintptr_t sSegmentTable[32];
 uintptr_t sSegmentROMTable[32];
 u32 sPoolFreeSpace;
