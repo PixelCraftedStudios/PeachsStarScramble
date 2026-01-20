@@ -154,7 +154,7 @@ void cutscene_custom_entry(void) {
         sCutsceneActive = FALSE; 
 
         set_mario_action(m, ACT_IDLE, 0);
-        set_camera_mode(c, CAMERA_MODE_8_DIRECTIONS, 1);
+        set_camera_mode(c, CAMERA_MODE_8_DIRECTIONS, 60);
         c->cutscene = 0;
     }
 }
