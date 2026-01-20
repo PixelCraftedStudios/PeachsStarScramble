@@ -537,9 +537,12 @@ void render_hud_camera_status(void) {
  * Render HUD strings using hudDisplayFlags with it's render functions,
  * excluding the cannon reticle which detects a camera preset for it.
  */
+void update_letterbox(void);
+void render_letterbox(void);
+
 void render_hud(void) {
     s16 hudDisplayFlags = gHudDisplay.flags;
-
+    update_letterbox();
     if (hudDisplayFlags == HUD_DISPLAY_NONE) {
         sPowerMeterHUD.animation = POWER_METER_HIDDEN;
         sPowerMeterStoredHealth = 8;
@@ -614,4 +617,5 @@ void render_hud(void) {
         }
 #endif
     }
+    render_letterbox();
 }

@@ -2,6 +2,10 @@ extern const GeoLayout wf_area_1_geo[];
 extern const GeoLayout wf_area_1[];
 extern const Collision wf_area_1_collision[];
 extern const MacroObject wf_area_1_macro_objs[];
+#include "src/game/camera.h"
+
+extern struct CutsceneSplinePoint wf_area_1_spline_cam1[];
+extern struct CutsceneSplinePoint wf_area_1_spline_foc1[];
 extern u8 wf_dl_sand_ci4[];
 extern u8 wf_dl_sand_pal_rgba16[];
 extern u8 wf_dl_sandside_ci8[];
@@ -11,7 +15,7 @@ extern u8 wf_dl_GM4E01_690ee59b_14_mip2_ci4_pal_rgba16[];
 extern u8 wf_dl_water_ci8[];
 extern u8 wf_dl_water_pal_rgba16[];
 extern Vtx wf_dl_Level_Mesh_mesh_layer_1_vtx_cull[8];
-extern Vtx wf_dl_Level_Mesh_mesh_layer_1_vtx_0[255];
+extern Vtx wf_dl_Level_Mesh_mesh_layer_1_vtx_0[238];
 extern Gfx wf_dl_Level_Mesh_mesh_layer_1_tri_0[];
 extern Vtx wf_dl_Level_Mesh_mesh_layer_1_vtx_1[57];
 extern Gfx wf_dl_Level_Mesh_mesh_layer_1_tri_1[];
