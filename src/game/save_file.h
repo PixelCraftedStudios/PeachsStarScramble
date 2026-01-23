@@ -210,4 +210,6 @@ u32 eu_get_language(void);
 #define LANGUAGE_ENGLISH 0
 #endif
 
+void load_specific_save(s32 slot);
+
 #endif // SAVE_FILE_H

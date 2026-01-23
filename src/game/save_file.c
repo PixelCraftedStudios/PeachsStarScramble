@@ -389,6 +389,41 @@ void save_file_load_all(void) {
     }
 }
 
+
+/**
+ * load_specific_save
+ * Loads a specific save slot from EEPROM and replaces the current game state.
+ *
+ * @param slot Save slot to load (0 = Save 1, 1 = Save 2, 2 = Save 3, 3 = Save 4)
+ */
+void load_specific_save(s32 slot) {
+    if (slot < 0 || slot >= NUM_SAVE_FILES) return;
+
+    // Load all save files from EEPROM
+    save_file_load_all();
+
+    // Set current save slot
+    gCurrSaveFileNum = slot;
+
+    // Restore primary copy if valid, otherwise restore backup
+    if (!verify_save_block_signature(&gSaveBuffer.files[slot][0],
+                                     sizeof(gSaveBuffer.files[slot][0]),
+                                     SAVE_FILE_MAGIC)) {
+        if (verify_save_block_signature(&gSaveBuffer.files[slot][1],
+                                        sizeof(gSaveBuffer.files[slot][1]),
+                                        SAVE_FILE_MAGIC)) {
+            restore_save_file_data(slot, 1);
+        } else {
+            save_file_erase(slot); // corrupted slot
+        }
+    } else {
+        restore_save_file_data(slot, 0);
+    }
+
+    // Done! gCurrSaveFileNum now points to the selected slot
+    // In-game objects, coins, health, MarioState etc. are NOT affected
+}
+
 #ifdef PUPPYCAM
 void puppycam_get_save(void) {
     gPuppyCam.options = gSaveBuffer.menuData.saveOptions;

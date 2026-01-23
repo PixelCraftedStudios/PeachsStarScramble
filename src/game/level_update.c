@@ -1352,6 +1352,9 @@ void ManageCutscenes(s16 initOrUpdate){
         case LEVEL_BOB:
             StartCutscene(CUSTOM_CUTSCENE_MH);
             break;
+        case LEVEL_WF:
+            StartCutscene(CUSTOM_CUTSCENE_SHELLSHOCK);
+            break;
 
 
         default:

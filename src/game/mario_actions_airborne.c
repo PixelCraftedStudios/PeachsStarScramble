@@ -907,34 +907,14 @@ s32 act_steep_jump(struct MarioState *m) {
     return FALSE;
 }
 
-void act_twirl(struct MarioState *m) {
-    s16 yawVelTarget;
-    set_mario_action(m, ACT_TWIRLING, 0);
-    // Determine yaw velocity target based on A input
-    if (m->input & INPUT_A_DOWN) {
-        yawVelTarget = 0x2000;
-    } else {
-        yawVelTarget = 0x1800;
-    }
-
-    // Smoothly approach the target yaw velocity
-    m->angleVel[1] = approach_s32(m->angleVel[1], yawVelTarget, 0x200, 0x200);
-    m->twirlYaw += m->angleVel[1];
-
-    // Make Mario move up slightly while twirling
-    m->vel[1] = 30.0f; // adjust this value to control upward speed
-
-    // Set twirl animation
-    set_mario_animation(m, m->actionArg == 0 ? MARIO_ANIM_START_TWIRL : MARIO_ANIM_TWIRL);
-
-    // Apply twirl rotation to Mario's model
-    m->marioObj->header.gfx.angle[1] += m->twirlYaw;
-
-    // Mark that we've started twirling so next frame uses MARIO_ANIM_TWIRL
-    if (m->actionArg == 0) {
-        m->actionArg = 1;
-    }
+void act_twirl(struct MarioState *m){
+    m->actionTimer++;
+    m->vel[1] = 30.0f;
+    m->actionTimer = 30;
+    set_mario_animation(m, MARIO_ANIM_TWIRL);
+    set_mario_action(m, ACT_FREEFALL, 0);
 }
+
 
 s32 act_ground_pound(struct MarioState *m) {
     u32 stepResult;
@@ -948,7 +928,7 @@ s32 act_ground_pound(struct MarioState *m) {
     }
     else if (m->input & INPUT_A_PRESSED) {    
         act_twirl(m);
-        return FALSE;    
+        return FALSE;  
     }
 
 

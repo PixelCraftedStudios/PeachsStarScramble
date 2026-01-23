@@ -88,7 +88,7 @@ const LevelScript level_bob_entry[] = {
 		OBJECT(MODEL_BOUNCINGSHROOM, -3110, 353, 2109, 0, 0, 0, 0x00000000, bhvbouncingShroom),
 		TERRAIN(bob_area_1_collision),
 		MACRO_OBJECTS(bob_area_1_macro_objs),
-		SET_BACKGROUND_MUSIC(0x00, SEQ_MUSHROOM_HILL),
+		SET_BACKGROUND_MUSIC(0x00, SEQ_TEMP),
 		TERRAIN_TYPE(TERRAIN_GRASS),
 		/* Fast64 begin persistent block [area commands] */
 		/* Fast64 end persistent block [area commands] */
