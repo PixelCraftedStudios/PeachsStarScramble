@@ -97,4 +97,6 @@ extern const Gfx white_particle_small_unused_dl[];
 #include "shroomBoss/collision_header.h"
 #include "shroomBoss/geo_header.h"
 #include "shroomBoss/anim_header.h"
+#include "firePlatform/collision_header.h"
+#include "firePlatform/geo_header.h"
 #endif

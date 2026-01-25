@@ -52,3 +52,33 @@ void bhvShroomBoss_loop(void) {
         spawn_default_star(o->oPosX, o->oPosY + 200.0f, o->oPosZ);
     }
 }
+
+
+void bhvMovingPlatform_loop(void) {
+
+    s32 height = ((o->oBehParams >> 16) & 0xFF) * 10;
+    u8 startDown = (o->oBehParams >> 24) & 0xFF;
+
+    if (o->oTimer == 0) {
+        o->oAction = (startDown == 1) ? 1 : 0;
+    }
+
+    switch (o->oAction) {
+
+        case 0: // moving up
+            o->oPosY += 4.0f;
+            if (o->oPosY >= (o->oHomeY + height)) {
+                o->oAction = 1;
+            }
+            break;
+
+        case 1: // moving down
+            o->oPosY -= 4.0f;
+            if (o->oPosY <= o->oHomeY) {
+                o->oAction = 0;
+            }
+            break;
+    }
+
+    load_object_collision_model();
+}

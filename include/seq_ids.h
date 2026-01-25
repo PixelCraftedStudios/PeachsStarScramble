@@ -48,6 +48,8 @@ enum SeqId {
     SEQ_MUSHROOM_HILL,  // 0x23
     SEQ_SHELLSHORE,  // 0x24
     SEQ_TEMP,  // 0x25
+    SEQ_OVERWORLD,  // 0x26
+    SEQ_MBIN,  // 0x27
     SEQ_COUNT,
 };
 

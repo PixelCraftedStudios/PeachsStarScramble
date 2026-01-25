@@ -6,7 +6,6 @@ const GeoLayout castle_grounds_area_1_geo[] = {
 		GEO_ROTATION_NODE_WITH_DL(LAYER_OPAQUE, 0, -18, 0, castle_grounds_dl_Circle_mesh_layer_1),
 		GEO_TRANSLATE_ROTATE_WITH_DL(LAYER_OPAQUE, -1580, 1098, 1164, 0, -45, 0, castle_grounds_dl_Cone_mesh_layer_1),
 		GEO_TRANSLATE_ROTATE_WITH_DL(LAYER_OPAQUE, 424, 1367, -1845, 0, -25, 0, castle_grounds_dl_Cone_001_mesh_layer_1),
-		GEO_TRANSLATE_ROTATE_WITH_DL(LAYER_OPAQUE, 2702, 727, -5682, 7, 3, 17, castle_grounds_dl_Geometry1_003_mesh_layer_1),
 		GEO_OPEN_NODE(),
 			GEO_DISPLAY_LIST(LAYER_OPAQUE, castle_grounds_dl_final_revert_mesh_layer_1),
 		GEO_CLOSE_NODE(),

@@ -40,3 +40,5 @@
 #include "shroomBoss/model.inc.c"
 #include "shroomBoss/anims/data.inc.c"
 #include "shroomBoss/anims/table.inc.c"
+#include "firePlatform/collision.inc.c"
+#include "firePlatform/model.inc.c"

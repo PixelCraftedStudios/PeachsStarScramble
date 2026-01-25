@@ -22,16 +22,17 @@ static struct CutsceneEvent sCourtyardEvents[] = {
         .type = CUTSCENE_EVENT_SPLINE,
         .spline = { castle_grounds_area_1_spline_Cutscene, castle_grounds_area_1_spline_Focus },
     },
+        {
+        .type = CUTSCENE_EVENT_WAIT,
+        .wait = { 60 },
+    },
 };
 static struct CutsceneEvent sShellshockEvents[] = {
     {
         .type = CUTSCENE_EVENT_SPLINE,
         .spline = { wf_area_1_spline_cam1, wf_area_1_spline_foc1, TIME(MODE_TIME, 60) },
     },
-    {
-        .type = CUTSCENE_EVENT_WAIT,
-        .wait = { 60 },
-    },
+
 };
 
 

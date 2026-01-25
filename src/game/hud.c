@@ -34,7 +34,7 @@
 
 // ------------- FPS COUNTER ---------------
 // To use it, call print_fps(x,y); every frame.
-#define FRAMETIME_COUNT 30
+#define FRAMETIME_COUNT 60
 
 OSTime frameTimes[FRAMETIME_COUNT];
 u8 curFrameTimeIndex = 0;
@@ -612,9 +612,9 @@ void render_hud(void) {
         }
 
 #ifdef VANILLA_STYLE_CUSTOM_DEBUG
-        if (gCustomDebugMode) {
-            render_debug_mode();
-        }
+        //if (gCustomDebugMode) {
+            print_fps(10, 80);
+        //}
 #endif
     }
     render_letterbox();

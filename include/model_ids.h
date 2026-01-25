@@ -3,6 +3,9 @@
 
 #define MODEL_NONE                             0x00
 
+/* fast64 object exports get inserted here */
+
+
 
 
 /* Global models that are loaded for every level */
@@ -16,13 +19,14 @@ Peach Tell - 0xE4
 Bouncing Shroom -  0xE5
 Bounce Pad - 0xE6
 Shroom Boss - 0xE7
+Fire Platform - 0xE8
 
 */
 #define MODEL_PEACH_TELL                  0xE4
 #define MODEL_BOUNCINGSHROOM              0xE5
 #define MODEL_BOUNCEPAD                   0xE6
 #define MODEL_SHROOMBOSS                  0xE7
-
+#define MODEL_FIREPLATFORM                0xE8
 
 /* Various static level geometry, the geo layout differs but terrain object presets treat them the same.*/
 

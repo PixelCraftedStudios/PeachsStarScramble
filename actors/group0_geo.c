@@ -20,3 +20,4 @@
 #include "bouncingShroom/geo.inc.c"
 #include "bouncePad/geo.inc.c"
 #include "shroomBoss/geo.inc.c"
+#include "firePlatform/geo.inc.c"

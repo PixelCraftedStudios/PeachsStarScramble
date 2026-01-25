@@ -457,6 +457,42 @@ extern u8 sDanceCutsceneIndexTable[][4];
 extern u8 sZoomOutAreaMasks[];
 
 /**
+ * Applies wall, floor, and ceiling collision to the camera position.
+ * Prevents the camera from clipping through geometry.
+ */
+static void camera_apply_collision(Vec3f pos) {
+    struct WallCollisionData wallCol;
+    struct Surface *ceil = NULL;
+    struct Surface *floor = NULL;
+    f32 floorY, ceilY;
+
+    // --- Wall collision ---
+    wallCol.x = pos[0];
+    wallCol.y = pos[1];
+    wallCol.z = pos[2];
+    wallCol.radius = 50.0f;   // Camera collision radius
+    wallCol.offsetY = 0.0f;
+
+    find_wall_collisions(&wallCol);
+
+    pos[0] = wallCol.x;
+    pos[1] = wallCol.y;
+    pos[2] = wallCol.z;
+
+    // --- Floor collision ---
+    floorY = find_floor(pos[0], pos[1] + 50.0f, pos[2], &floor);
+    if (floor != NULL && floorY != FLOOR_LOWER_LIMIT && pos[1] < floorY + 50.0f) {
+        pos[1] = floorY + 50.0f;
+    }
+
+    // --- Ceiling collision ---
+    ceilY = find_ceil(pos[0], pos[1] + 20.0f, pos[2], &ceil);
+    if (ceil != NULL && ceilY != CELL_HEIGHT_LIMIT && pos[1] > ceilY - 20.0f) {
+        pos[1] = ceilY - 20.0f;
+    }
+}
+
+/**
  * Starts a camera shake triggered by an interaction
  */
 void set_camera_shake_from_hit(s16 shake) {
@@ -2083,6 +2119,8 @@ s16 update_default_camera(struct Camera *c) {
 
     calc_y_to_curr_floor(&posHeight, 1, 200, &focHeight, 0.9f, 200);
     vec3f_copy(cPos, c->pos);
+    camera_apply_collision(c->pos);
+
     avoidStatus = rotate_camera_around_walls(c, cPos, &avoidYaw, 0x600);
     // If a wall is blocking the view of Mario, then rotate in the calculated direction
     if (avoidStatus == AVOID_STATUS_WALL_COVERING_MARIO) {
@@ -2888,6 +2926,7 @@ void update_camera(struct Camera *c) {
     gCamera = c;
     
 
+    camera_apply_collision(c->pos);
 
     update_camera_hud_status(c);
     if (c->cutscene == CUTSCENE_NONE
@@ -5939,13 +5978,7 @@ struct CameraTrigger sCamSSL[] = {
  * the end of the ride.
  */
 struct CameraTrigger sCamRR[] = {
-    { 1, cam_rr_exit_building_side, -4197, 3819, -3087, 1769, 1490, 342, 0 },
-    { 1, cam_rr_enter_building_side, -4197, 3819, -3771, 769, 490, 342, 0 },
-    { 1, cam_rr_enter_building_window, -5603, 4834, -5209, 300, 600, 591, 0 },
-    { 1, cam_rr_enter_building, -2609, 3730, -5463, 300, 650, 577, 0 },
-    { 1, cam_rr_exit_building_top, -4196, 7343, -5155, 4500, 1000, 4500, 0 },
-    { 1, cam_rr_enter_building, -4196, 6043, -5155, 500, 300, 500, 0 },
-    NULL_TRIGGER,
+	NULL_TRIGGER
 };
 
 /**
@@ -6076,6 +6109,9 @@ struct CameraTrigger sCamCastleGrounds[] = {
 };
 
 struct CameraTrigger sCamWF[] = {
+	NULL_TRIGGER
+};
+struct CameraTrigger sCamJRB[] = {
 	NULL_TRIGGER
 };
 struct CameraTrigger *sCameraTriggers[LEVEL_COUNT + 1] = {
@@ -10422,7 +10458,7 @@ u8 sZoomOutAreaMasks[] = {
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // CASTLE_INSIDE  | HMC
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 1, 0, 0), // SSL            | BOB
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // SL             | WDW
-	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // JRB            | THI
+	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // JRB            | THI
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // TTC            | RR
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // CASTLE_GROUNDS | BITDW
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // VCUTM          | BITFS
