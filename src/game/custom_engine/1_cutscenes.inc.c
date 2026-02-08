@@ -1,19 +1,38 @@
 #include "levels/bob/header.h"
 #include "levels/castle_grounds/header.h"
 #include "levels/wf/header.h"
-
 static struct CutsceneEvent sMHEvents[] = {
     {
         .type = CUTSCENE_EVENT_SPLINE,
-        .spline = { bob_area_1_spline_mh_cam, bob_area_1_spline_mh_foc, TIME(MODE_TIME, 60) },
+        .spline = {
+            bob_area_1_spline_mh_cam,
+            bob_area_1_spline_mh_foc,
+            TIME(MODE_TIME, 100),
+        },
     },
     {
         .type = CUTSCENE_EVENT_SPLINE,
-        .spline = { bob_area_1_spline_mh_cam2, bob_area_1_spline_mh_foc2, TIME(MODE_TIME, 60) },
+        .spline = {
+            bob_area_1_spline_mh_cam2,
+            bob_area_1_spline_mh_foc2,
+            TIME(MODE_TIME, 60),
+        },
     },
     {
         .type = CUTSCENE_EVENT_SPLINE,
-        .spline = { bob_area_1_spline_mh_cam3, bob_area_1_spline_mh_foc3, TIME(MODE_TIME, 60) },
+        .spline = {
+            bob_area_1_spline_mh_cam3,
+            bob_area_1_spline_mh_foc3,
+            TIME(MODE_TIME, 60),
+        },
+    },
+    {
+        .type = CUTSCENE_EVENT_SPLINE,
+        .spline = {
+            bob_area_1_spline_mh_cam2,
+            bob_area_1_spline_mh_foc2,
+            TIME(MODE_TIME, 60),
+        },
     },
 };
 

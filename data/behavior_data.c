@@ -6109,6 +6109,9 @@ const BehaviorScript bhvbouncePad[] = {
 
 void bhvShroomBoss_loop(void);
 void bhvMovingPlatform_loop(void);
+void bhv_silver_star_init(void);
+void bhv_silver_star_loop(void);
+void bhvFallingRock_loop(void);
 
 const BehaviorScript bhvShroomBoss[] = {
     BEGIN(OBJ_LIST_SURFACE),
@@ -6140,5 +6143,40 @@ const BehaviorScript bhvFirePlatform[] = {
 
     BEGIN_LOOP(),
         CALL_NATIVE(bhvMovingPlatform_loop),
+    END_LOOP(),
+};
+
+const BehaviorScript bhvBreakableMHBox[] = {
+    BEGIN(OBJ_LIST_SURFACE),
+    OR_LONG(oFlags, (OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE | OBJ_FLAG_DONT_CALC_COLL_DIST)),
+    LOAD_COLLISION_DATA(mgMoveBox_collision),
+    SET_FLOAT(oCollisionDistance, 1000),
+    CALL_NATIVE(bhv_init_room),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_breakable_box_loop),
+        CALL_NATIVE(load_object_collision_model),
+    END_LOOP(),
+    BREAK(),
+};
+
+const BehaviorScript bhvSilverStar[] = {
+    BEGIN(OBJ_LIST_LEVEL),
+    OR_INT(oFlags, OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE),
+    CALL_NATIVE(bhv_silver_star_init),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_silver_star_loop),
+    END_LOOP(),
+};
+
+const BehaviorScript bhvFallingRock[] = {
+    BEGIN(OBJ_LIST_SURFACE),
+    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+    LOAD_COLLISION_DATA(FallingRock_collision),
+    SET_OBJ_PHYSICS(/*Wall hitbox radius*/ 50, /*Gravity*/ -400, /*Bounciness*/ 0, /*Drag strength*/ 1000, /*Friction*/ 1000, /*Buoyancy*/ 200, /*Unused*/ 0, 0),
+    SET_FLOAT(oDrawingDistance, 100000),
+    SET_FLOAT(oCollisionDistance, 1000),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhvFallingRock_loop),
+        CALL_NATIVE(load_object_collision_model),
     END_LOOP(),
 };

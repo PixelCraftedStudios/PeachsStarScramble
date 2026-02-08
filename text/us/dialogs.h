@@ -235,30 +235,33 @@ ride wherever you want to\n\
 go! Shred those enemies!"))
 
 DEFINE_DIALOG(DIALOG_017, 1, 4, 30, 200, _("\
-I'm the Big Bob-omb, lord\n\
-of all blasting matter,\n\
-king of ka-booms the\n\
-world over!\n\
-How dare you scale my\n\
-mountain? By what right\n\
-do you set foot on my\n\
-imperial mountaintop?\n\
-You may have eluded my\n\
-guards, but you'll never\n\
-escape my grasp...\n\
+What?! How did you find\n\
+me again?!\n\
 \n\
-...and you'll never take\n\
-away my Power Star. I\n\
-hereby challenge you,\n\
-Mario!\n\
-If you want the Star I\n\
-hold, you must prove\n\
-yourself in battle.\n\
+I finally found this\n\
+Power Star, and you\n\
+think you can just take\n\
+it from me?!\n\
 \n\
-Can you pick me up from\n\
-the back and hurl me to\n\
-this royal turf? I think\n\
-that you cannot!"))
+I am the Big Bob-omb,\n\
+lord of all blasting\n\
+matter, king of\n\
+KA-BOOMS everywhere!\n\
+\n\
+You may have climbed my\n\
+mountain once before,\n\
+but this time you will\n\
+not be so lucky!\n\
+\n\
+If you want this Star,\n\
+you'll have to fight\n\
+for it!\n\
+\n\
+Try picking me up from\n\
+behind and throwing me\n\
+down on this royal turf!\n\
+\n\
+I dare you!"))
 
 DEFINE_DIALOG(DIALOG_018, 1, 4, 30, 200, _("\
 I'm sleeping because...\n\

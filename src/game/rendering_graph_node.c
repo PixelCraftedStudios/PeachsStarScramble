@@ -633,14 +633,21 @@ void geo_process_camera(struct GraphNodeCamera *node) {
  * For the rest it acts as a normal display list node.
  */
 void geo_process_translation_rotation(struct GraphNodeTranslationRotation *node) {
-    Vec3f translation;
-
-    vec3s_to_vec3f(translation, node->translation);
-    mtxf_rotate_zxy_and_translate_and_mul(node->rotation, translation, gMatStack[gMatStackIndex + 1], gMatStack[gMatStackIndex]);
+    mtxf_rotate_zxy_and_translate_and_mul(
+        node->rotation,
+        (Vec3f) {
+            node->translation[0],
+            node->translation[1],
+            node->translation[2]
+        },
+        gMatStack[gMatStackIndex + 1],
+        gMatStack[gMatStackIndex]
+    );
 
     inc_mat_stack();
-    append_dl_and_return((struct GraphNodeDisplayList *)node);
+    append_dl_and_return((struct GraphNodeDisplayList *) node);
 }
+
 
 /**
  * Process a translation node. A transformation matrix based on the node's

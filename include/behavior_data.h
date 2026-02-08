@@ -547,6 +547,9 @@ extern const BehaviorScript bhvbouncePad[];
 
 extern const BehaviorScript bhvShroomBoss[];
 extern const BehaviorScript bhvFirePlatform[];
+extern const BehaviorScript bhvBreakableMHBox[];
+extern const BehaviorScript bhvSilverStar[];
+extern const BehaviorScript bhvFallingRock[];
 /*CUSTOM BHV*/
 
 #endif // BEHAVIOR_DATA_H

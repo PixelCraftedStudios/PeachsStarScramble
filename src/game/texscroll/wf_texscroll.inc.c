@@ -3,5 +3,5 @@
 #include "levels/wf/texscroll.inc.c"
 
 void scroll_textures_wf() {
-	scroll_wf();
+		scroll_wf();
 }

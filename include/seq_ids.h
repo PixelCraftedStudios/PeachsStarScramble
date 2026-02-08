@@ -50,6 +50,8 @@ enum SeqId {
     SEQ_TEMP,  // 0x25
     SEQ_OVERWORLD,  // 0x26
     SEQ_MBIN,  // 0x27
+    SEQ_SELECT,  // 0x28
+    SEQ_SSS,  // 0x29
     SEQ_COUNT,
 };
 

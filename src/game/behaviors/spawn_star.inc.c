@@ -138,6 +138,19 @@ void spawn_default_star(f32 x, f32 y, f32 z) {
     starObj->oBehParams2ndByte = SPAWN_STAR_ARC_CUTSCENE_BP_DEFAULT_STAR;
 }
 
+void spawn_star_with_id(f32 x, f32 y, f32 z, s16 id) {
+    struct Object *starObj = NULL;
+
+    // spawn the star
+    starObj = spawn_star(starObj, x, y, z);
+
+    // store the id in the 2nd byte (u8)
+    if (id < 0) id = 0;        // clamp negative values
+    if (id > 255) id = 255;    // clamp too large values
+
+    starObj->oBehParams2ndByte = (u8)id;
+}
+
 void spawn_red_coin_cutscene_star(f32 x, f32 y, f32 z) {
     struct Object *starObj = NULL;
     starObj = spawn_star(starObj, x, y, z);

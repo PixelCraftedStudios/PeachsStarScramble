@@ -21,3 +21,6 @@
 #include "bouncePad/geo.inc.c"
 #include "shroomBoss/geo.inc.c"
 #include "firePlatform/geo.inc.c"
+#include "mgMoveBox/geo.inc.c"
+#include "NewPipe/geo.inc.c"
+#include "FallingRock/geo.inc.c"

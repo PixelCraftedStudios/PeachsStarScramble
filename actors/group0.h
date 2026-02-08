@@ -99,4 +99,10 @@ extern const Gfx white_particle_small_unused_dl[];
 #include "shroomBoss/anim_header.h"
 #include "firePlatform/collision_header.h"
 #include "firePlatform/geo_header.h"
+#include "mgMoveBox/collision_header.h"
+#include "mgMoveBox/geo_header.h"
+#include "NewPipe/collision_header.h"
+#include "NewPipe/geo_header.h"
+#include "FallingRock/collision_header.h"
+#include "FallingRock/geo_header.h"
 #endif

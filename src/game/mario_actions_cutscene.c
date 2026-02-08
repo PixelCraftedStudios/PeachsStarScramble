@@ -406,9 +406,9 @@ s32 act_waiting_for_dialog(struct MarioState *m) {
 
 // makes Mario disappear and triggers warp
 s32 act_disappeared(struct MarioState *m) {
-    set_mario_animation(m, MARIO_ANIM_A_POSE);
+    //set_mario_animation(m, MARIO_ANIM_A_POSE);
     stop_and_set_height_to_floor(m);
-    m->marioObj->header.gfx.node.flags &= ~GRAPH_RENDER_ACTIVE;
+    //m->marioObj->header.gfx.node.flags &= ~GRAPH_RENDER_ACTIVE;
     if (m->actionArg) {
         m->actionArg--;
         if ((m->actionArg & 0xFFFF) == 0) {

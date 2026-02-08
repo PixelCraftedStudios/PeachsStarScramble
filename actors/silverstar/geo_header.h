@@ -1,0 +1,17 @@
+extern const GeoLayout silverstar_geo[];
+extern u8 silverstar__0302A6F0_i8[];
+extern u8 silverstar__222_png_ia16[];
+extern Vtx silverstar_Cube_mesh_layer_1_vtx_cull[8];
+extern Vtx silverstar_Cube_mesh_layer_1_vtx_0[12];
+extern Gfx silverstar_Cube_mesh_layer_1_tri_0[];
+extern Vtx silverstar_Cube_001_mesh_layer_5_vtx_cull[8];
+extern Vtx silverstar_Cube_001_mesh_layer_5_vtx_0[8];
+extern Gfx silverstar_Cube_001_mesh_layer_5_tri_0[];
+extern Gfx mat_silverstar_sm64_material[];
+extern Gfx mat_revert_silverstar_sm64_material[];
+extern Gfx mat_silverstar_sm64_material_002[];
+extern Gfx mat_revert_silverstar_sm64_material_002[];
+extern Gfx silverstar_Cube_mesh_layer_1[];
+extern Gfx silverstar_Cube_001_mesh_layer_5[];
+extern Gfx silverstar_final_revert_mesh_layer_1[];
+extern Gfx silverstar_final_revert_mesh_layer_5[];

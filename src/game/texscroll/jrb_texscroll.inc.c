@@ -3,5 +3,5 @@
 #include "levels/jrb/texscroll.inc.c"
 
 void scroll_textures_jrb() {
-	scroll_jrb();
+		scroll_jrb();
 }

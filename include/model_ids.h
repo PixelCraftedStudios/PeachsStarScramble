@@ -6,8 +6,6 @@
 /* fast64 object exports get inserted here */
 
 
-
-
 /* Global models that are loaded for every level */
 
 #define MODEL_MARIO                            0x01        // mario_geo
@@ -20,6 +18,10 @@ Bouncing Shroom -  0xE5
 Bounce Pad - 0xE6
 Shroom Boss - 0xE7
 Fire Platform - 0xE8
+mgMoveBox - 0xE9
+New Pipe - 0xEA
+Silver Star - 0xEB
+Falling Rock - 0xEC
 
 */
 #define MODEL_PEACH_TELL                  0xE4
@@ -27,6 +29,10 @@ Fire Platform - 0xE8
 #define MODEL_BOUNCEPAD                   0xE6
 #define MODEL_SHROOMBOSS                  0xE7
 #define MODEL_FIREPLATFORM                0xE8
+#define MODEL_MGMOVEBOX                   0xE9
+#define MODEL_NEWPIPE                     0xEA
+#define MODEL_SILVERSTAR                  0xEB
+#define MODEL_FALLINGROCK                 0xEC
 
 /* Various static level geometry, the geo layout differs but terrain object presets treat them the same.*/
 

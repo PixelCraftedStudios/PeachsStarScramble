@@ -1,4 +1,4 @@
-void scroll_wf_dl_Water_Box_Mesh_mesh_layer_5_vtx_0() {
+void scroll_wf_dl_Plane_mesh_layer_5_vtx_0() {
 	int i = 0;
 	int count = 4;
 	int width = 32 * 0x20;
@@ -8,7 +8,7 @@ void scroll_wf_dl_Water_Box_Mesh_mesh_layer_5_vtx_0() {
 	int deltaX;
 	static int currentY = 0;
 	int deltaY;
-	Vtx *vertices = segmented_to_virtual(wf_dl_Water_Box_Mesh_mesh_layer_5_vtx_0);
+	Vtx *vertices = segmented_to_virtual(wf_dl_Plane_mesh_layer_5_vtx_0);
 
 	deltaX = (int)(-0.20000000298023224 * 0x20) % width;
 	deltaY = (int)(-0.20000000298023224 * 0x20) % height;
@@ -28,5 +28,5 @@ void scroll_wf_dl_Water_Box_Mesh_mesh_layer_5_vtx_0() {
 }
 
 void scroll_wf() {
-	scroll_wf_dl_Water_Box_Mesh_mesh_layer_5_vtx_0();
+	scroll_wf_dl_Plane_mesh_layer_5_vtx_0();
 };

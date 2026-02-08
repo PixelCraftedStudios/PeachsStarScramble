@@ -907,14 +907,30 @@ s32 act_steep_jump(struct MarioState *m) {
     return FALSE;
 }
 
-void act_twirl(struct MarioState *m){
-    m->actionTimer++;
-    m->vel[1] = 30.0f;
-    m->actionTimer = 30;
-    set_mario_animation(m, MARIO_ANIM_TWIRL);
-    set_mario_action(m, ACT_FREEFALL, 0);
-}
+void act_twirl(struct MarioState *m) {
+    if (m->actionArg == 0) {
+        m->actionArg = 1; // start at 1 so we can detect first frame
+    } else {
+        m->actionArg++;   // increment every call
+    }
 
+    // Optional upward velocity on the first frame
+    if (m->actionArg == 1) {
+        m->vel[1] = 60.0f;
+    }
+
+    // After 60 frames/calls, force freefall
+    if (m->actionArg >= 60) {
+        m->actionArg = 0; // reset for next time
+        set_mario_action(m, ACT_FREEFALL, 0);
+        return;
+    }
+
+    // Switch to twirling action (if needed)
+    set_mario_action(m, ACT_TWIRLING, 0);
+
+    perform_air_step(m, AIR_STEP_CHECK_LEDGE_GRAB);
+}
 
 s32 act_ground_pound(struct MarioState *m) {
     u32 stepResult;
@@ -927,8 +943,12 @@ s32 act_ground_pound(struct MarioState *m) {
         return FALSE;
     }
     else if (m->input & INPUT_A_PRESSED) {    
-        act_twirl(m);
-        return FALSE;  
+        m->actionTimer = 10;
+        m->actionState = 1;
+        for (int i = 0; i < 2; i++){
+            act_twirl(m);
+        }
+        return FALSE;
     }
 
 
@@ -2134,6 +2154,7 @@ s32 mario_execute_airborne_action(struct MarioState *m) {
         case ACT_RIDING_HOOT:          cancel = act_riding_hoot(m);          break;
         case ACT_TOP_OF_POLE_JUMP:     cancel = act_top_of_pole_jump(m);     break;
         case ACT_VERTICAL_WIND:        cancel = act_vertical_wind(m);        break;
+
     }
     /* clang-format on */
 

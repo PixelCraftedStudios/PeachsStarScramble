@@ -65,7 +65,11 @@ const LevelScript level_main_scripts_entry[] = {
     LOAD_RAW_WITH_CODE( /*seg*/ SEGMENT_COMMON1_GEO,   _common1_geoSegmentRomStart,  _common1_geoSegmentRomEnd, _common1_geoSegmentBssStart, _common1_geoSegmentBssEnd),
     LOAD_RAW_WITH_CODE( /*seg*/ SEGMENT_BEHAVIOR_DATA,    _behaviorSegmentRomStart,     _behaviorSegmentRomEnd,   _behaviorSegmentBssStart,     _behaviorSegmentBssEnd),
     ALLOC_LEVEL_POOL(),
+    LOAD_MODEL_FROM_GEO(MODEL_FALLINGROCK, FallingRock_geo),
+    LOAD_MODEL_FROM_GEO(MODEL_SILVERSTAR, silverstar_geo),
+    LOAD_MODEL_FROM_GEO(MODEL_NEWPIPE, NewPipe_geo),
     LOAD_MODEL_FROM_GEO(MODEL_FIREPLATFORM, firePlatform_geo),
+    LOAD_MODEL_FROM_GEO(MODEL_MGMOVEBOX, mgMoveBox_geo),
 
     LOAD_MODEL_FROM_GEO(MODEL_BOUNCEPAD, bouncePad_geo),
     LOAD_MODEL_FROM_GEO(MODEL_BOUNCINGSHROOM, bouncingShroom_geo),

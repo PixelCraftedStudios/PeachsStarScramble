@@ -1,6 +1,6 @@
 const Collision thi_area_1_collision[] = {
 	COL_INIT(),
-	COL_VERTEX_INIT(8),
+	COL_VERTEX_INIT(13),
 	COL_VERTEX(-2933, -25, 1536),
 	COL_VERTEX(-2933, -25, -1536),
 	COL_VERTEX(-2933, 2572, -1536),
@@ -9,6 +9,11 @@ const Collision thi_area_1_collision[] = {
 	COL_VERTEX(2933, 2572, -1536),
 	COL_VERTEX(2933, -25, 1536),
 	COL_VERTEX(2933, 2572, 1536),
+	COL_VERTEX(60, -237, -1579),
+	COL_VERTEX(60, -237, 1357),
+	COL_VERTEX(2995, 2698, -1579),
+	COL_VERTEX(2995, -237, -1579),
+	COL_VERTEX(2995, -237, 1357),
 	COL_TRI_INIT(SURFACE_DEFAULT, 12),
 	COL_TRI(0, 1, 2),
 	COL_TRI(0, 2, 3),
@@ -22,6 +27,13 @@ const Collision thi_area_1_collision[] = {
 	COL_TRI(1, 6, 4),
 	COL_TRI(5, 7, 3),
 	COL_TRI(5, 3, 2),
+	COL_TRI_INIT(SURFACE_NOT_SLIPPERY, 6),
+	COL_TRI(8, 9, 10),
+	COL_TRI(8, 10, 11),
+	COL_TRI(8, 11, 12),
+	COL_TRI(8, 12, 9),
+	COL_TRI(9, 12, 10),
+	COL_TRI(10, 12, 11),
 	COL_TRI_STOP(),
 	COL_END()
 };
