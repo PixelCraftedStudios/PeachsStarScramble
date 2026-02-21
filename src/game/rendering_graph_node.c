@@ -266,90 +266,76 @@ Mtx identityMatrixWorldScale = {{
  * would make the ZEX 0-4 render on top of Rej's 5-7.
  */
 void geo_process_master_list_sub(struct GraphNodeMasterList *node) {
-    struct RenderPhase *renderPhase;
-    struct DisplayListNode *currList;
-    s32 currLayer     = LAYER_FIRST;
-    s32 startLayer    = LAYER_FIRST;
-    s32 endLayer      = LAYER_LAST;
-    s32 phaseIndex    = RENDER_PHASE_FIRST;
-    s32 enableZBuffer = (node->node.flags & GRAPH_RENDER_Z_BUFFER) != 0;
-    s32 finalPhase    = enableZBuffer ? RENDER_PHASE_END : 1;
-    struct RenderModeContainer *mode1List = &renderModeTable_1Cycle[enableZBuffer];
-    struct RenderModeContainer *mode2List = &renderModeTable_2Cycle[enableZBuffer];
-    Gfx *tempGfxHead = gDisplayListHead;
+    const s32 enableZ = (node->node.flags & GRAPH_RENDER_Z_BUFFER) != 0;
+    const s32 finalPhase = enableZ ? RENDER_PHASE_END : 1;
 
-    // Loop through the render phases
-    for (phaseIndex = RENDER_PHASE_FIRST; phaseIndex < finalPhase; phaseIndex++) {
-        if (enableZBuffer) {
-            // Get the render phase information.
-            renderPhase = &sRenderPhases[phaseIndex];
-            startLayer  = renderPhase->startLayer;
-            endLayer    = renderPhase->endLayer;
-            // Enable z buffer.
-            gDPPipeSync(tempGfxHead++);
-            gSPSetGeometryMode(tempGfxHead++, G_ZBUFFER);
+    struct RenderModeContainer *rm1 = &renderModeTable_1Cycle[enableZ];
+    struct RenderModeContainer *rm2 = &renderModeTable_2Cycle[enableZ];
+
+    Gfx *dl = gDisplayListHead;
+
+    for (s32 phase = RENDER_PHASE_FIRST; phase < finalPhase; phase++) {
+
+        s32 start, end;
+        if (enableZ) {
+            const struct RenderPhase *rp = &sRenderPhases[phase];
+            start = rp->startLayer;
+            end   = rp->endLayer;
+
+            gDPPipeSync(dl++);
+            gSPSetGeometryMode(dl++, G_ZBUFFER);
         } else {
-            startLayer = LAYER_FORCE;
-            endLayer = LAYER_TRANSPARENT;
+            start = LAYER_FORCE;
+            end   = LAYER_TRANSPARENT;
         }
-        // Iterate through the layers on the current render phase.
-        for (currLayer = startLayer; currLayer <= endLayer; currLayer++) {
-            // Set 'currList' to the first DisplayListNode on the current layer.
-            currList = node->listHeads[currLayer];
-#if defined(DISABLE_AA) || !SILHOUETTE
-            // Set the render mode for the current layer.
-            gDPSetRenderMode(tempGfxHead++, mode1List->modes[currLayer],
-                                                 mode2List->modes[currLayer]);
-#else
-            if (phaseIndex == RENDER_PHASE_NON_SILHOUETTE) {
-                // To properly cover the silhouette, disable AA.
-                // The silhouette model does not have AA due to the hack used to prevent triangle overlap.
-                gDPSetRenderMode(tempGfxHead++, (mode1List->modes[currLayer] & ~IM_RD),
-                                                     (mode2List->modes[currLayer] & ~IM_RD));
-            } else {
-                // Set the render mode for the current dl.
-                gDPSetRenderMode(tempGfxHead++, mode1List->modes[currLayer],
-                                                     mode2List->modes[currLayer]);
-            }
-#endif
-            // Iterate through all the displaylists on the current layer.
-            while (currList != NULL) {
-                // Add the display list's transformation to the master list.
-                gSPMatrix(tempGfxHead++, VIRTUAL_TO_PHYSICAL(currList->transform),
-                          (G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH));
+
+        for (s32 layer = start; layer <= end; layer++) {
+
+            struct DisplayListNode *curr = node->listHeads[layer];
+            if (!curr) continue;
+
+            const u32 mode1 = rm1->modes[layer];
+            const u32 mode2 = rm2->modes[layer];
+
 #if SILHOUETTE
-                if (phaseIndex == RENDER_PHASE_SILHOUETTE) {
-                    // Add the current display list to the master list, with silhouette F3D.
-                    gSPDisplayList(tempGfxHead++, dl_silhouette_begin);
-                    gSPDisplayList(tempGfxHead++, currList->displayList);
-                    gSPDisplayList(tempGfxHead++, dl_silhouette_end);
+            const u32 mode1_noAA = (mode1 & ~IM_RD);
+            const u32 mode2_noAA = (mode2 & ~IM_RD);
+
+            const u32 useNoAA = (phase == RENDER_PHASE_NON_SILHOUETTE);
+            gDPSetRenderMode(dl++, useNoAA ? mode1_noAA : mode1,
+                                     useNoAA ? mode2_noAA : mode2);
+#else
+            gDPSetRenderMode(dl++, mode1, mode2);
+#endif
+
+            // Tight inner loop
+            do {
+                gSPMatrix(dl++, VIRTUAL_TO_PHYSICAL(curr->transform),
+                          G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
+
+#if SILHOUETTE
+                if (phase == RENDER_PHASE_SILHOUETTE) {
+                    gSPDisplayList(dl++, dl_silhouette_begin);
+                    gSPDisplayList(dl++, curr->displayList);
+                    gSPDisplayList(dl++, dl_silhouette_end);
                 } else {
-                    // Add the current display list to the master list.
-                    gSPDisplayList(tempGfxHead++, currList->displayList);
+                    gSPDisplayList(dl++, curr->displayList);
                 }
 #else
-                // Add the current display list to the master list.
-                gSPDisplayList(tempGfxHead++, currList->displayList);
+                gSPDisplayList(dl++, curr->displayList);
 #endif
-                // Move to the next DisplayListNode.
-                currList = currList->next;
-            }
+
+                curr = curr->next;
+            } while (curr);
         }
     }
 
-    if (enableZBuffer) {
-        // Disable z buffer.
-        gDPPipeSync(tempGfxHead++);
-        gSPClearGeometryMode(tempGfxHead++, G_ZBUFFER);
-#ifdef VISUAL_DEBUG
-        // Load the world scale identity matrix
-        gSPMatrix(tempGfxHead++, &identityMatrixWorldScale, G_MTX_MODELVIEW | G_MTX_LOAD | G_MTX_NOPUSH);
-        if (surfaceView) visual_surface_loop(&tempGfxHead);
-        render_debug_boxes(&tempGfxHead);
-#endif
+    if (enableZ) {
+        gDPPipeSync(dl++);
+        gSPClearGeometryMode(dl++, G_ZBUFFER);
     }
 
-    gDisplayListHead = tempGfxHead;
+    gDisplayListHead = dl;
 }
 
 /**
@@ -361,44 +347,49 @@ void geo_append_display_list(void *displayList, s32 layer) {
 #ifdef F3DEX_GBI_2
     gSPLookAt(gDisplayListHead++, gCurLookAt);
 #endif
-#if SILHOUETTE
-    if (gCurGraphNodeObject != NULL) {
-        if (gCurGraphNodeObject->node.flags & GRAPH_RENDER_SILHOUETTE) {
-            switch (layer) {
-                case LAYER_OPAQUE: layer = LAYER_SILHOUETTE_OPAQUE; break;
-                case LAYER_ALPHA:  layer = LAYER_SILHOUETTE_ALPHA;  break;
-            }
-        }
-        if (gCurGraphNodeObject->node.flags & GRAPH_RENDER_OCCLUDE_SILHOUETTE) {
-            switch (layer) {
-                case LAYER_OPAQUE: layer = LAYER_OCCLUDE_SILHOUETTE_OPAQUE; break;
-                case LAYER_ALPHA:  layer = LAYER_OCCLUDE_SILHOUETTE_ALPHA;  break;
-            }
-        }
-    }
-#endif // F3DEX_GBI_2 || SILHOUETTE
-    if (gCurGraphNodeMasterList != NULL) {
-        struct DisplayListNode *listNode =
-            alloc_only_pool_alloc(gDisplayListHeap, sizeof(struct DisplayListNode));
 
-        listNode->transform = gMatStackFixed[gMatStackIndex];
-        listNode->displayList = displayList;
-        listNode->next = NULL;
-        if (gCurGraphNodeMasterList->listHeads[layer] == NULL) {
-            gCurGraphNodeMasterList->listHeads[layer] = listNode;
-        } else {
-            gCurGraphNodeMasterList->listTails[layer]->next = listNode;
+#if SILHOUETTE
+    if (gCurGraphNodeObject) {
+        const u32 flags = gCurGraphNodeObject->node.flags;
+
+        if (flags & GRAPH_RENDER_SILHOUETTE) {
+            if (layer == LAYER_OPAQUE) layer = LAYER_SILHOUETTE_OPAQUE;
+            else if (layer == LAYER_ALPHA) layer = LAYER_SILHOUETTE_ALPHA;
         }
-        gCurGraphNodeMasterList->listTails[layer] = listNode;
+
+        if (flags & GRAPH_RENDER_OCCLUDE_SILHOUETTE) {
+            if (layer == LAYER_OPAQUE) layer = LAYER_OCCLUDE_SILHOUETTE_OPAQUE;
+            else if (layer == LAYER_ALPHA) layer = LAYER_OCCLUDE_SILHOUETTE_ALPHA;
+        }
     }
+#endif
+
+    struct DisplayListNode *n =
+        alloc_only_pool_alloc(gDisplayListHeap, sizeof(struct DisplayListNode));
+
+    n->transform   = gMatStackFixed[gMatStackIndex];
+    n->displayList = displayList;
+    n->next        = NULL;
+
+    struct DisplayListNode **head = &gCurGraphNodeMasterList->listHeads[layer];
+    struct DisplayListNode **tail = &gCurGraphNodeMasterList->listTails[layer];
+
+    if (*head == NULL) {
+        *head = n;
+    } else {
+        (*tail)->next = n;
+    }
+    *tail = n;
 }
 
-static void inc_mat_stack() {
-    Mtx *mtx = alloc_display_list(sizeof(*mtx));
+static inline void inc_mat_stack() {
+    Mtx *mtx = alloc_display_list(sizeof(Mtx));
     gMatStackIndex++;
+
     mtxf_to_mtx(mtx, gMatStack[gMatStackIndex]);
     gMatStackFixed[gMatStackIndex] = mtx;
 }
+
 
 static void append_dl_and_return(struct GraphNodeDisplayList *node) {
     if (node->displayList != NULL) {
@@ -635,19 +626,14 @@ void geo_process_camera(struct GraphNodeCamera *node) {
 void geo_process_translation_rotation(struct GraphNodeTranslationRotation *node) {
     mtxf_rotate_zxy_and_translate_and_mul(
         node->rotation,
-        (Vec3f) {
-            node->translation[0],
-            node->translation[1],
-            node->translation[2]
-        },
+        (Vec3f){ node->translation[0], node->translation[1], node->translation[2] },
         gMatStack[gMatStackIndex + 1],
         gMatStack[gMatStackIndex]
     );
 
     inc_mat_stack();
-    append_dl_and_return((struct GraphNodeDisplayList *) node);
+    append_dl_and_return((struct GraphNodeDisplayList *)node);
 }
-
 
 /**
  * Process a translation node. A transformation matrix based on the node's

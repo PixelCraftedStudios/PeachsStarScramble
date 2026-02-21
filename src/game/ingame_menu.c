@@ -2337,7 +2337,7 @@ s32 logic_menus_and_dialogs(void) {
                 mode = logic_pause_courses_and_castle();
                 break;
             case MENU_MODE_RENDER_COURSE_COMPLETE_SCREEN:
-                //mode = render_course_complete_screen();
+                mode = render_course_complete_screen();
                 break;
         }
 

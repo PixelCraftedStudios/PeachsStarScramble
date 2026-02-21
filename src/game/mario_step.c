@@ -28,6 +28,7 @@ struct Surface gWaterSurfacePseudoFloor = {
     0.0f,                       // originOffset
     NULL,                       // object
 };
+#define WALL_RAYCAST_THRESHOLD 30.0f
 
 /**
  * Always returns zero. This may have been intended
@@ -64,6 +65,80 @@ void stub_mario_step_1(UNUSED struct MarioState *x) {
  */
 void stub_mario_step_2(void) {
 }
+// --------------------------------------------------------------------------
+// Floor/Ceiling Raycast (slope-safe, no freezing, no false hits)
+// --------------------------------------------------------------------------
+static f32 ms_ray_length(Vec3f v) {
+    return sqrtf(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+}
+
+static void ms_ray_normalize(Vec3f v) {
+    f32 len = ms_ray_length(v);
+    if (len > 0.0f) {
+        v[0] /= len;
+        v[1] /= len;
+        v[2] /= len;
+    }
+}
+
+u32 raycast_mario_movement(Vec3f start, Vec3f end, Vec3f hitPos, struct Surface **hitSurf) {
+    Vec3f dir;
+
+    // Lift ray above Mario to avoid starting inside floor
+    Vec3f s, e;
+    s[0] = start[0];
+    s[1] = start[1] + 30.0f;
+    s[2] = start[2];
+
+    e[0] = end[0];
+    e[1] = end[1] + 30.0f;
+    e[2] = end[2];
+
+    vec3f_diff(dir, e, s);
+
+    f32 length = ms_ray_length(dir);
+    if (length < 1.0f)
+        return FALSE;
+
+    ms_ray_normalize(dir);
+
+    Vec3f probe;
+    f32 step = CLAMP(length / 20.0f, 2.0f, 10.0f);
+    const f32 tolerance = 5.0f;
+
+    for (f32 t = 0.0f; t <= length; t += step) {
+        probe[0] = s[0] + dir[0] * t;
+        probe[1] = s[1] + dir[1] * t;
+        probe[2] = s[2] + dir[2] * t;
+
+        struct Surface *floor = NULL;
+        struct Surface *ceil  = NULL;
+
+        f32 floorHeight = find_floor(probe[0], probe[1], probe[2], &floor);
+        f32 ceilHeight  = find_mario_ceil(probe, floorHeight, &ceil);
+
+        // Floor hit
+        if (dir[1] < 0.0f && probe[1] < floorHeight - tolerance) {
+            hitPos[0] = probe[0];
+            hitPos[1] = floorHeight;
+            hitPos[2] = probe[2];
+            *hitSurf = floor;
+            return TRUE;
+        }
+
+        // Ceiling hit
+        if (dir[1] > 0.0f && probe[1] + 160.0f > ceilHeight + tolerance) {
+            hitPos[0] = probe[0];
+            hitPos[1] = ceilHeight - 160.0f;
+            hitPos[2] = probe[2];
+            *hitSurf = ceil;
+            return TRUE;
+        }
+    }
+
+    return FALSE;
+}
+
 
 void transfer_bully_speed(struct BullyCollisionData *obj1, struct BullyCollisionData *obj2) {
     f32 rx = obj2->posX - obj1->posX;
@@ -343,10 +418,102 @@ static s32 perform_ground_quarter_step(struct MarioState *m, Vec3f nextPos) {
 
     return GROUND_STEP_NONE;
 }
+// --------------------------------------------------------------------------
+// Full 3D Wall Sweep (capsule cast) — prevents ALL wall clipping
+// --------------------------------------------------------------------------
+u32 raycast_mario_wall(Vec3f start, Vec3f end, Vec3f hitPos, struct Surface **hitSurf) {
+    Vec3f dir;
+    vec3f_diff(dir, end, start);
+
+    f32 length = sqrtf(dir[0]*dir[0] + dir[1]*dir[1] + dir[2]*dir[2]);
+    if (length < 1.0f) {
+        return FALSE;
+    }
+
+    // Normalize direction
+    dir[0] /= length;
+    dir[1] /= length;
+    dir[2] /= length;
+
+    // Treat Mario as a capsule of this radius
+    const f32 radius = 50.0f;
+    // Never move more than radius/2 per sample along the path
+    s32 steps = (s32)((length + (radius * 0.5f) - 1.0f) / (radius * 0.5f)); 
+    if (steps < 1) steps = 1;
+    f32 dt = 1.0f / (f32) steps;
+
+    Vec3f probe;
+    struct WallCollisionData wallData;
+
+    struct Surface *bestWall = NULL;
+    f32 bestT = 1.1f; // >1 means "no hit yet"
+
+    for (s32 i = 0; i <= steps; i++) {
+        f32 t = dt * (f32) i;
+        if (t > 1.0f) t = 1.0f;
+
+        probe[0] = start[0] + dir[0] * (length * t);
+        probe[1] = start[1] + dir[1] * (length * t);
+        probe[2] = start[2] + dir[2] * (length * t);
+
+        // Slightly fatter than Mario to be conservative
+        resolve_and_return_wall_collisions(probe, radius + 10.0f, radius + 10.0f, &wallData);
+
+        if (wallData.numWalls > 0) {
+            for (s32 j = 0; j < wallData.numWalls; j++) {
+                struct Surface *w = wallData.walls[j];
+                if (w == NULL) continue;
+
+                Vec3f n = { w->normal.x, w->normal.y, w->normal.z };
+                Vec3f p0 = { w->vertex1[0], w->vertex1[1], w->vertex1[2] };
+
+                f32 denom = n[0]*dir[0] + n[1]*dir[1] + n[2]*dir[2];
+                if (absf(denom) < 0.0001f) {
+                    continue; // Parallel
+                }
+
+                Vec3f diff;
+                diff[0] = p0[0] - start[0];
+                diff[1] = p0[1] - start[1];
+                diff[2] = p0[2] - start[2];
+
+                f32 tHit = (n[0]*diff[0] + n[1]*diff[1] + n[2]*diff[2]) / denom;
+                if (tHit < 0.0f || tHit > 1.0f) {
+                    continue;
+                }
+
+                if (tHit < bestT) {
+                    bestT = tHit;
+                    bestWall = w;
+                }
+            }
+        }
+    }
+
+    if (bestWall != NULL && bestT <= 1.0f) {
+        Vec3f n = { bestWall->normal.x, bestWall->normal.y, bestWall->normal.z };
+        f32 tWorld = bestT * length;
+
+        hitPos[0] = start[0] + dir[0] * tWorld;
+        hitPos[1] = start[1] + dir[1] * tWorld;
+        hitPos[2] = start[2] + dir[2] * tWorld;
+
+        // Push Mario out of the wall by his radius
+        hitPos[0] -= n[0] * radius;
+        hitPos[1] -= n[1] * radius;
+        hitPos[2] -= n[2] * radius;
+
+        *hitSurf = bestWall;
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 
 s32 perform_ground_step(struct MarioState *m) {
     s32 i;
-    u32 stepResult;
+    u32 stepResult = GROUND_STEP_NONE;
     Vec3f intendedPos;
     const f32 numSteps = 4.0f;
 
@@ -357,19 +524,45 @@ s32 perform_ground_step(struct MarioState *m) {
         intendedPos[2] = m->pos[2] + m->floor->normal.y * (m->vel[2] / numSteps);
         intendedPos[1] = m->pos[1];
 
-        stepResult = perform_ground_quarter_step(m, intendedPos);
-        if (stepResult == GROUND_STEP_LEFT_GROUND || stepResult == GROUND_STEP_HIT_WALL_STOP_QSTEPS) {
-            break;
+        // --- WALL SWEEP ONLY IF MOVING FAST ---
+        if (m->forwardVel > WALL_RAYCAST_THRESHOLD || 
+            absf(m->vel[0]) > WALL_RAYCAST_THRESHOLD ||
+            absf(m->vel[2]) > WALL_RAYCAST_THRESHOLD) {
+
+            struct Surface *wallHit = NULL;
+            Vec3f wallPos;
+
+            if (raycast_mario_wall(m->pos, intendedPos, wallPos, &wallHit)) {
+                vec3f_copy(m->pos, wallPos);
+                set_mario_wall(m, wallHit);
+                return GROUND_STEP_HIT_WALL; // or AIR_STEP_HIT_WALL
+            }
         }
+
+
+        // --- FLOOR/CEILING RAYCAST ---
+        struct Surface *hitSurf = NULL;
+        Vec3f hitPos;
+        if (raycast_mario_movement(m->pos, intendedPos, hitPos, &hitSurf)) {
+            vec3f_copy(m->pos, hitPos);
+            set_mario_wall(m, hitSurf);
+            return GROUND_STEP_HIT_WALL;
+        }
+
+        stepResult = perform_ground_quarter_step(m, intendedPos);
+
+        if (stepResult == GROUND_STEP_LEFT_GROUND ||
+            stepResult == GROUND_STEP_HIT_WALL_STOP_QSTEPS)
+            break;
     }
 
     m->terrainSoundAddend = mario_get_terrain_sound_addend(m);
     vec3f_copy(m->marioObj->header.gfx.pos, m->pos);
     vec3s_set(m->marioObj->header.gfx.angle, 0, m->faceAngle[1], 0);
 
-    if (stepResult == GROUND_STEP_HIT_WALL_CONTINUE_QSTEPS) {
+    if (stepResult == GROUND_STEP_HIT_WALL_CONTINUE_QSTEPS)
         stepResult = GROUND_STEP_HIT_WALL;
-    }
+
     return stepResult;
 }
 
@@ -677,7 +870,6 @@ void apply_vertical_wind(struct MarioState *m) {
         }
     }
 }
-
 s32 perform_air_step(struct MarioState *m, u32 stepArg) {
     Vec3f intendedPos;
     const f32 numSteps = 4.0f;
@@ -688,32 +880,74 @@ s32 perform_air_step(struct MarioState *m, u32 stepArg) {
     set_mario_wall(m, NULL);
 
     for (i = 0; i < 4; i++) {
+        // Proposed position
         intendedPos[0] = m->pos[0] + m->vel[0] / numSteps;
         intendedPos[1] = m->pos[1] + m->vel[1] / numSteps;
         intendedPos[2] = m->pos[2] + m->vel[2] / numSteps;
 
+        // --- WALL SWEEP (same as ground) ---
+        if (absf(m->vel[0]) > WALL_RAYCAST_THRESHOLD ||
+            absf(m->vel[1]) > WALL_RAYCAST_THRESHOLD ||
+            absf(m->vel[2]) > WALL_RAYCAST_THRESHOLD) {
+
+            struct Surface *wallHit = NULL;
+            Vec3f wallPos;
+
+            if (raycast_mario_wall(m->pos, intendedPos, wallPos, &wallHit)) {
+                vec3f_copy(m->pos, wallPos);
+                set_mario_wall(m, wallHit);
+                return AIR_STEP_HIT_WALL;
+            }
+        }
+
+        // --- FLOOR/CEILING SWEEP (same as ground) ---
+        struct Surface *hitSurf = NULL;
+        Vec3f hitPos;
+
+        if (raycast_mario_movement(m->pos, intendedPos, hitPos, &hitSurf)) {
+            vec3f_copy(m->pos, hitPos);
+
+            // If the swept hit is a floor and we're descending → land
+            if (hitSurf->normal.y > 0.01f && m->vel[1] <= 0.0f) {
+                m->floor = hitSurf;
+                return AIR_STEP_LANDED;
+            }
+
+            // If it's a ceiling → bonk
+            if (hitSurf->normal.y < -0.01f && m->vel[1] > 0.0f) {
+                m->ceil = hitSurf;
+                m->vel[1] = 0.0f;
+                return AIR_STEP_GRABBED_CEILING;
+            }
+
+            // Otherwise treat as wall
+            set_mario_wall(m, hitSurf);
+            return AIR_STEP_HIT_WALL;
+        }
+
+        // --- FALLBACK TO ORIGINAL QUARTER STEP ---
         quarterStepResult = perform_air_quarter_step(m, intendedPos, stepArg);
 
-        if (quarterStepResult != AIR_STEP_NONE) {
+        if (quarterStepResult != AIR_STEP_NONE)
             stepResult = quarterStepResult;
-        }
 
-        if (quarterStepResult == AIR_STEP_LANDED || quarterStepResult == AIR_STEP_GRABBED_LEDGE
-            || quarterStepResult == AIR_STEP_GRABBED_CEILING
-            || quarterStepResult == AIR_STEP_HIT_LAVA_WALL) {
+        if (quarterStepResult == AIR_STEP_LANDED ||
+            quarterStepResult == AIR_STEP_GRABBED_LEDGE ||
+            quarterStepResult == AIR_STEP_GRABBED_CEILING ||
+            quarterStepResult == AIR_STEP_HIT_LAVA_WALL)
             break;
-        }
     }
 
-    if (m->vel[1] >= 0.0f) {
+
+
+    if (m->vel[1] >= 0.0f)
         m->peakHeight = m->pos[1];
-    }
 
     m->terrainSoundAddend = mario_get_terrain_sound_addend(m);
 
-    if (m->action != ACT_FLYING) {
+    if (m->action != ACT_FLYING)
         apply_gravity(m);
-    }
+
     apply_vertical_wind(m);
 
     vec3f_copy(m->marioObj->header.gfx.pos, m->pos);
@@ -721,6 +955,7 @@ s32 perform_air_step(struct MarioState *m, u32 stepArg) {
 
     return stepResult;
 }
+
 
 // They had these functions the whole time and never used them? Lol
 

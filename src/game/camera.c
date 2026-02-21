@@ -708,19 +708,69 @@ void calc_y_to_curr_floor(f32 *posOff, f32 posMul, f32 posBound, f32 *focOff, f3
     }
 }
 
-void focus_on_mario(Vec3f focus, Vec3f pos, f32 posYOff, f32 focYOff, f32 dist, s16 pitch, s16 yaw) {
+// Persistent offset from the real camera yaw
+static s16 sFollowOffset = 0;
+
+
+void focus_on_mario(
+    Vec3f focus, Vec3f pos,
+    f32 posYOff, f32 focYOff,
+    f32 dist, s16 pitch, s16 yawInput
+) {
+    struct Camera *c = gCamera;
     Vec3f marioPos;
 
+    // 1. Mario position with vertical offset
     marioPos[0] = sMarioCamState->pos[0];
     marioPos[1] = sMarioCamState->pos[1] + posYOff;
     marioPos[2] = sMarioCamState->pos[2];
 
-    vec3f_set_dist_and_angle(marioPos, pos, dist, pitch + sLakituPitch, yaw);
+    // 2. Mario’s back direction
+    s16 marioBack = sMarioCamState->faceAngle[1] + 0x8000;
 
+    // 3. Desired offset from the REAL camera yaw
+    s16 desiredOffset = marioBack - yawInput;
+
+    // 4. Smooth rate
+    const f32 followRate = 0.0065f;
+
+    //
+    // --- CAMERA FOLLOW LOGIC ---
+    //
+    if (gMarioState->forwardVel > 2.0f) {
+        // Mario is moving → update follow offset normally
+        sFollowOffset = approach_s16_symmetric(
+            sFollowOffset,
+            desiredOffset,
+            (s16)(followRate * 65536.0f)
+        );
+    } else {
+        // Mario is NOT moving → freeze camera offset completely
+        // Do nothing. No drift, no return, no smoothing.
+    }
+
+    // 5. Final yaw = real yaw + smoothed offset
+    s16 finalYaw = yawInput + sFollowOffset;
+
+    // 6. Sync camera yaw
+    c->yaw = finalYaw;
+    gCamera->yaw = finalYaw;
+
+    // 7. Place camera
+    vec3f_set_dist_and_angle(
+        marioPos,
+        pos,
+        dist,
+        pitch + sLakituPitch,
+        finalYaw
+    );
+
+    // 8. Focus on Mario
     focus[0] = sMarioCamState->pos[0];
     focus[1] = sMarioCamState->pos[1] + focYOff;
     focus[2] = sMarioCamState->pos[2];
 }
+
 
 /**
  * Set the camera's y coordinate to goalHeight, respecting floors and ceilings in the way
@@ -903,27 +953,72 @@ s32 update_radial_camera(struct Camera *c, Vec3f focus, Vec3f pos) {
     return camYaw;
 }
 
+static void followcam_collision(Vec3f pos, Vec3f focus, f32 desiredDist) {
+    struct Surface *surf = NULL;
+    Vec3f dir, rayEnd, hitPos;
+
+    // Direction from Mario to camera
+    vec3_diff(dir, pos, focus);
+    vec3f_normalize(dir);
+
+    // Ray end = focus + dir * desiredDist
+    vec3_scale_dest(rayEnd, dir, desiredDist);
+
+    // Raycast
+    f32 hitDist = find_surface_on_ray(focus, rayEnd, &surf, hitPos,
+        RAYCAST_FIND_WALL | RAYCAST_FIND_FLOOR | RAYCAST_FIND_CEIL);
+
+    if (surf && hitDist < desiredDist) {
+        // Push camera slightly away from wall
+        f32 safeDist = MAX(hitDist - 20.0f, 50.0f);
+
+        vec3_scale(dir, safeDist);
+        vec3_sum(pos, focus, dir);
+
+        // If too close, lift camera upward
+        if (safeDist < 250.0f) {
+            pos[1] += (250.0f - safeDist);
+        }
+    }
+}
+
+
 /**
  * Update the camera during 8 directional mode
- */
-s32 update_8_directions_camera(struct Camera *c, Vec3f focus, Vec3f pos) {
-    s16 camYaw = s8DirModeBaseYaw + s8DirModeYawOffset;
-    s16 pitch = look_down_slopes(camYaw);
-    f32 posY;
-    f32 focusY;
+ */s32 update_8_directions_camera(struct Camera *c, Vec3f focus, Vec3f pos) {
+    // 1. Mode yaw
+    s16 desiredYaw = s8DirModeBaseYaw + s8DirModeYawOffset;
+
+    // 2. Pitch
+    s16 pitch = look_down_slopes(desiredYaw);
+
+    f32 posY, focusY;
     f32 yOff = 125.f;
     f32 baseDist = 1000.f;
 
-    sAreaYaw = camYaw;
+    sAreaYaw = desiredYaw;
+
+    // 3. Floor height
     calc_y_to_curr_floor(&posY, 1.f, 200.f, &focusY, 0.9f, 200.f);
-    focus_on_mario(focus, pos, posY + yOff, focusY + yOff, sLakituDist + baseDist, pitch, camYaw);
+
+    // 4. Follow-camera placement (smooth yaw)
+    focus_on_mario(
+        focus, pos,
+        posY + yOff,
+        focusY + yOff,
+        sLakituDist + baseDist,
+        pitch,
+        desiredYaw
+    );
+
+    // 5. Collision (Puppycam-style)
+    followcam_collision(pos, focus, sLakituDist + baseDist);
+
+    // 6. Pan ahead
     pan_ahead_of_player(c);
-#ifdef ENABLE_VANILLA_LEVEL_SPECIFIC_CHECKS
-    if (gCurrLevelArea == AREA_DDD_SUB) {
-        camYaw = clamp_positions_and_find_yaw(pos, focus, 6839.f, 995.f, 5994.f, -3945.f);
-    }
-#endif
-    return camYaw;
+
+    // 7. Return actual yaw
+    return gCamera->yaw;
 }
 
 /**
@@ -3514,13 +3609,7 @@ void vec3f_to_object_pos(struct Object *obj, Vec3f src) {
     obj->oPosZ = src[2];
 }
 
-/**
- * Produces values using a cubic b-spline curve. Basically Q is the used output,
- * u is a value between 0 and 1 that represents the position along the spline,
- * and a0-a3 are parameters that define the spline.
- *
- * The spline is described at www2.cs.uregina.ca/~anima/408/Notes/Interpolation/UniformBSpline.htm
- */
+
 void evaluate_cubic_spline(f32 u, Vec3f Q, Vec3f spline1, Vec3f spline2, Vec3f spline3, Vec3f spline4) {
     f32 B[4];
     if (u > 1.0f) u = 1.0f;
@@ -3539,79 +3628,67 @@ void evaluate_cubic_spline(f32 u, Vec3f Q, Vec3f spline1, Vec3f spline2, Vec3f s
     Q[2] = (B[0] * spline1[2]) + (B[1] * spline2[2]) + (B[2] * spline3[2]) + (B[3] * spline4[2]);
 }
 
-/**
- * Computes the point that is `progress` percent of the way through segment `splineSegment` of `spline`,
- * and stores the result in `p`. `progress` and `splineSegment` are updated if `progress` becomes >= 1.0.
- *
- * When neither of the next two points' speeds == 0, the number of frames is between 1 and 255. Otherwise
- * it's infinite.
- *
- * To calculate the number of frames it will take to progress through a spline segment:
- * If the next two speeds are the same and nonzero, it's 1.0 / firstSpeed.
- *
- * s1 and s2 are short hand for first/secondSpeed. The progress at any frame n is defined by a recurrency relation:
- *      p(n+1) = (s2 - s1 + 1) * p(n) + s1
- * Which can be written as
- *      p(n) = (s2 * ((s2 - s1 + 1)^(n) - 1)) / (s2 - s1)
- *
- * Solving for the number of frames:
- *      n = log(((s2 - s1) / s1) + 1) / log(s2 - s1 + 1)
- *
- * @return 1 if the point has reached the end of the spline, when `progress` reaches 1.0 or greater, and
- * the 4th CutsceneSplinePoint in the current segment away from spline[splineSegment] has an index of -1.
- */
+// Evaluate Catmull-Rom spline segment (u in 0..1)
+void evaluate_catmull_rom(f32 u, Vec3f Q, Vec3f P0, Vec3f P1, Vec3f P2, Vec3f P3) {
+    f32 u2 = u * u;
+    f32 u3 = u2 * u;
+
+    // Catmull-Rom basis
+    f32 b0 = -0.5f*u3 + u2 - 0.5f*u;
+    f32 b1 =  1.5f*u3 - 2.5f*u2 + 1.0f;
+    f32 b2 = -1.5f*u3 + 2.0f*u2 + 0.5f*u;
+    f32 b3 =  0.5f*u3 - 0.5f*u2;
+
+    // Compute point
+    Q[0] = b0*P0[0] + b1*P1[0] + b2*P2[0] + b3*P3[0];
+    Q[1] = b0*P0[1] + b1*P1[1] + b2*P2[1] + b3*P3[1];
+    Q[2] = b0*P0[2] + b1*P1[2] + b2*P2[2] + b3*P3[2];
+}
+
+// Move point along Catmull-Rom spline
 s32 move_point_along_spline(Vec3f p, struct CutsceneSplinePoint spline[], s16 *splineSegment, f32 *progress) {
     s32 finished = FALSE;
     Vec3f controlPoints[4];
-    f32 firstSpeed, secondSpeed, progressChange;
     s16 segment = *splineSegment;
 
-    // 1. Safety: Ensure we aren't starting out of bounds
-    if (segment < 0) {
-        segment = 0;
-        *splineSegment = 0;
-        *progress = 0.0f;
+    // Safety
+    if (segment < 0) { segment = 0; *splineSegment = 0; *progress = 0.0f; }
+
+    // Check we have enough points (segment+3)
+    if (spline[segment].index == -1 ||
+        spline[segment+1].index == -1 ||
+        spline[segment+2].index == -1 ||
+        spline[segment+3].index == -1) {
+        return TRUE;
     }
 
-    // 2. Check if we have enough points to form a cubic segment (4 points needed)
-    if (spline[segment].index == -1 || 
-        spline[segment + 1].index == -1 || 
-        spline[segment + 2].index == -1 || 
-        spline[segment + 3].index == -1) {
-        return TRUE; // End of spline reached
-    }
-
-    // 3. Load Control Points
+    // Load 4 points
     for (s32 i = 0; i < 4; i++) {
-        controlPoints[i][0] = spline[segment + i].point[0];
-        controlPoints[i][1] = spline[segment + i].point[1];
-        controlPoints[i][2] = spline[segment + i].point[2];
+        controlPoints[i][0] = spline[segment+i].point[0];
+        controlPoints[i][1] = spline[segment+i].point[1];
+        controlPoints[i][2] = spline[segment+i].point[2];
     }
 
-    // 4. Evaluate Position
-    evaluate_cubic_spline(*progress, p, controlPoints[0], controlPoints[1], controlPoints[2], controlPoints[3]);
+    // Evaluate position
+    evaluate_catmull_rom(*progress, p, controlPoints[0], controlPoints[1], controlPoints[2], controlPoints[3]);
 
-    // 5. Calculate Speed (Progress Delta)
-    firstSpeed  = (spline[segment + 1].speed != 0) ? (1.0f / spline[segment + 1].speed) : 0.01f;
-    secondSpeed = (spline[segment + 2].speed != 0) ? (1.0f / spline[segment + 2].speed) : 0.01f;
+    // Speed interpolation (optional)
+    f32 firstSpeed  = (spline[segment+1].speed != 0) ? (1.0f / spline[segment+1].speed) : 0.01f;
+    f32 secondSpeed = (spline[segment+2].speed != 0) ? (1.0f / spline[segment+2].speed) : 0.01f;
+    f32 t = *progress;
+    t = t*t*(3.0f - 2.0f*t); // smoothstep
+    f32 progressChange = (secondSpeed - firstSpeed) * t + firstSpeed;
 
-    // Smoothstep for smooth 0 → 1 acceleration
-    f32 t = *progress;          // 0..1
-    t = t * t * (3.0f - 2.0f * t); // smoothstep easing
-
-    // Interpolate speed
-    progressChange = (secondSpeed - firstSpeed) * t + firstSpeed;
-
-    // 6. Update Progress
+    // Update progress
     *progress += progressChange;
 
-    // 7. Handle Segment Transition
+    // Handle segment transition
     if (*progress >= 1.0f) {
         *progress -= 1.0f;
         (*splineSegment)++;
 
-        // Check if the NEXT segment is valid
-        if (spline[*splineSegment + 3].index == -1) {
+        // End check
+        if (spline[*splineSegment+3].index == -1) {
             *splineSegment = 0;
             *progress = 0.0f;
             finished = TRUE;
@@ -3620,7 +3697,6 @@ s32 move_point_along_spline(Vec3f p, struct CutsceneSplinePoint spline[], s16 *s
 
     return finished;
 }
-
 /**
  * If `selection` is 0, just get the current selection
  * If `selection` is 1, select 'Mario' as the alt mode.
@@ -4624,28 +4700,28 @@ void play_camera_buzz_if_cbutton(void) {
 
 void play_camera_buzz_if_c_sideways(void) {
     if (gPlayer1Controller->buttonPressed & (L_CBUTTONS | R_CBUTTONS)) {
-        play_sound_button_change_blocked();
+
     }
 }
 
 void play_sound_cbutton_up(void) {
-    play_sound(SOUND_MENU_CAMERA_ZOOM_IN, gGlobalSoundSource);
+    play_sound(SOUND_MENU_NEWCAM, gGlobalSoundSource);
 }
 
 void play_sound_cbutton_down(void) {
-    play_sound(SOUND_MENU_CAMERA_ZOOM_OUT, gGlobalSoundSource);
+    play_sound(SOUND_MENU_NEWCAM, gGlobalSoundSource);
 }
 
 void play_sound_cbutton_side(void) {
-    play_sound(SOUND_MENU_CAMERA_TURN, gGlobalSoundSource);
+    play_sound(SOUND_MENU_NEWCAM, gGlobalSoundSource);
 }
 
 void play_sound_button_change_blocked(void) {
-    play_sound(SOUND_MENU_CAMERA_BUZZ, gGlobalSoundSource);
+    play_sound(SOUND_MENU_NEWCAM, gGlobalSoundSource);
 }
 
 void play_sound_rbutton_changed(void) {
-    play_sound(SOUND_MENU_CLICK_CHANGE_VIEW, gGlobalSoundSource);
+    play_sound(SOUND_MENU_NEWCAM, gGlobalSoundSource);
 }
 
 void play_sound_if_cam_switched_to_lakitu_or_mario(void) {
@@ -6112,6 +6188,9 @@ struct CameraTrigger sCamWF[] = {
 	NULL_TRIGGER
 };
 struct CameraTrigger sCamJRB[] = {
+	NULL_TRIGGER
+};
+struct CameraTrigger sCamBowser_2[] = {
 	NULL_TRIGGER
 };
 struct CameraTrigger *sCameraTriggers[LEVEL_COUNT + 1] = {
@@ -10460,7 +10539,7 @@ u8 sZoomOutAreaMasks[] = {
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // SL             | WDW
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // JRB            | THI
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // TTC            | RR
-	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // CASTLE_GROUNDS | BITDW
+	ZOOMOUT_AREA_MASK(1, 1, 0, 0, 1, 0, 0, 0), // CASTLE_GROUNDS | BITDW
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // VCUTM          | BITFS
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // SA             | BITS
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // LLL            | DDD
@@ -10468,7 +10547,7 @@ u8 sZoomOutAreaMasks[] = {
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 0, 0, 0, 0), // COURTYARD      | PSS
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // COTMC          | TOTWC
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // BOWSER_1       | WMOTR
-	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // Unused         | BOWSER_2
+	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 1, 0, 0), // Unused         | BOWSER_2
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // BOWSER_3       | Unused
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // TTM            | Unused
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 0, 0, 0, 0), // Unused         | Unused

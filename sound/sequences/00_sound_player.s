@@ -6972,6 +6972,7 @@ sound_ref .chan_2D18
 sound_ref .sound_menu_power_meter
 sound_ref .sound_menu_camera_buzz
 sound_ref .sound_menu_camera_turn
+sound_ref .sound_menu_1
 
 .sound_menu_change_select:
 chan_setbank 9
@@ -8143,3 +8144,13 @@ envelope_line 4 32760
 envelope_line 50 32760
 envelope_line 200 0
 envelope_goto 2
+
+.sound_menu_1:
+chan_setbank 9
+chan_setinstr 7
+chan_setlayer 0, .layer_menu_1
+chan_end
+
+.layer_menu_1:
+layer_note1 39, 0x13, 127
+layer_end

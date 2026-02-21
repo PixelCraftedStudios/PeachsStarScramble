@@ -207,6 +207,40 @@ void update_air_with_turn(struct MarioState *m) {
     }
 }
 
+/* Faster turning variant used for the triple jump so Mario rotates quicker
+ * toward the analog stick without drastically changing existing air behavior.
+ */
+void update_air_with_turn_fast(struct MarioState *m) {
+    f32 dragThreshold;
+    s16 intendedDYaw;
+    f32 intendedMag;
+
+    if (!check_horizontal_wind(m)) {
+        dragThreshold = m->action == ACT_LONG_JUMP ? 48.0f : 32.0f;
+        m->forwardVel = approach_f32(m->forwardVel, 0.0f, 0.35f, 0.35f);
+
+        if (m->input & INPUT_NONZERO_ANALOG) {
+            intendedDYaw = m->intendedYaw - m->faceAngle[1];
+            intendedMag = m->intendedMag / 32.0f;
+
+            /* Slightly stronger forward acceleration toward intended direction */
+            m->forwardVel += 2.0f * coss(intendedDYaw) * intendedMag;
+            /* Increase yaw change to make turning noticeably faster */
+            m->faceAngle[1] += 1024.0f * sins(intendedDYaw) * intendedMag;
+        }
+
+        if (m->forwardVel > dragThreshold) {
+            m->forwardVel -= 1.0f;
+        }
+        if (m->forwardVel < -16.0f) {
+            m->forwardVel += 2.0f;
+        }
+
+        m->vel[0] = m->slideVelX = m->forwardVel * sins(m->faceAngle[1]);
+        m->vel[2] = m->slideVelZ = m->forwardVel * coss(m->faceAngle[1]);
+    }
+}
+
 void update_air_without_turn(struct MarioState *m) {
     f32 sidewaysSpeed = 0.0f;
     f32 dragThreshold;
@@ -477,15 +511,14 @@ s32 act_triple_jump(struct MarioState *m) {
         return set_mario_action(m, ACT_SPECIAL_TRIPLE_JUMP, 0);
     }
 
-    if (m->input & INPUT_B_PRESSED) {
-        forwards_velocity_dive(m);
-    }
-
     if (m->input & INPUT_Z_PRESSED) {
         return set_mario_action(m, ACT_GROUND_POUND, 0);
     }
 
     play_mario_sound(m, SOUND_ACTION_TERRAIN_JUMP, 0);
+
+    /* Allow faster turning toward the analog stick while airborne in the triple jump. */
+    update_air_with_turn_fast(m);
 
     common_air_action_step(m, ACT_TRIPLE_JUMP_LAND, MARIO_ANIM_TRIPLE_JUMP, 0);
 #if ENABLE_RUMBLE
@@ -637,6 +670,7 @@ s32 act_long_jump(struct MarioState *m) {
     }
 
     common_air_action_step(m, ACT_LONG_JUMP_LAND, animation, AIR_STEP_CHECK_LEDGE_GRAB);
+    update_air_with_turn_fast(m);
 #if ENABLE_RUMBLE
     if (m->action == ACT_LONG_JUMP_LAND) {
         queue_rumble_data(5, 40);

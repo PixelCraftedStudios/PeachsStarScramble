@@ -105,4 +105,8 @@ extern const Gfx white_particle_small_unused_dl[];
 #include "NewPipe/geo_header.h"
 #include "FallingRock/collision_header.h"
 #include "FallingRock/geo_header.h"
+#include "piranhaalt/collision_header.h"
+#include "piranhaalt/geo_header.h"
+#include "pengBoss/geo_header.h"
+#include "testyoshi/geo_header.h"
 #endif

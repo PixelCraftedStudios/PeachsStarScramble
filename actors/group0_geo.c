@@ -24,3 +24,6 @@
 #include "mgMoveBox/geo.inc.c"
 #include "NewPipe/geo.inc.c"
 #include "FallingRock/geo.inc.c"
+#include "piranhaalt/geo.inc.c"
+#include "pengBoss/geo.inc.c"
+#include "testyoshi/geo.inc.c"

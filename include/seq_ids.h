@@ -46,12 +46,14 @@ enum SeqId {
     SEQ_MENU_FILE_SELECT,  // 0x21
     SEQ_EVENT_CUTSCENE_LAKITU,  // 0x22 (not in JP)
     SEQ_MUSHROOM_HILL,  // 0x23
-    SEQ_SHELLSHORE,  // 0x24
-    SEQ_TEMP,  // 0x25
-    SEQ_OVERWORLD,  // 0x26
-    SEQ_MBIN,  // 0x27
-    SEQ_SELECT,  // 0x28
-    SEQ_SSS,  // 0x29
+    SEQ_OVERWORLD,  // 0x24
+    SEQ_MBIN,  // 0x25
+    SEQ_SELECT,  // 0x26
+    SEQ_SSS,  // 0x27
+    SEQ_DF,  // 0x28
+    SEQ_MARIOHOUSE,  // 0x29
+    SEQ_FRAPPE_SNOWLAND,  // 0x2A
+    SEQ_FOREST,  // 0x2B
     SEQ_COUNT,
 };
 

@@ -81,7 +81,7 @@
 /**
  * If A and Z are pressed on the same frame while running, Mario will long jump instead of ground pound.
  */
-// #define EASIER_LONG_JUMPS
+#define EASIER_LONG_JUMPS
 
 /**
  * Enables the ability to hold Z while twirling to descend faster.
@@ -106,7 +106,7 @@
 /**
  * The maximum angle the player can wall kick, in degrees. 0..90. To allow 45 degree wall kicks, you must supply `46` to allow 45 and under.
  */
-#define WALL_KICK_DEGREES 46
+#define WALL_KICK_DEGREES 65
 
 /**
  * Makes Mario unable to ledge grab steep slopes to prevent false ledge grabs.

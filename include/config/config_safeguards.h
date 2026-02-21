@@ -106,11 +106,6 @@
     #define USE_PROFILER
 #endif // PUPPYPRINT_DEBUG
 
-#ifdef COMPLETE_SAVE_FILE
-    #undef UNLOCK_ALL
-    #define UNLOCK_ALL
-#endif // COMPLETE_SAVE_FILE
-
 #ifdef DEBUG
     #undef DEBUG_ASSERTIONS
     #define DEBUG_ASSERTIONS

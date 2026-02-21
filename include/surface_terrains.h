@@ -225,6 +225,8 @@ enum SurfaceTypes {
     SURFACE_WOBBLING_WARP,              // 0x00FD // Pool warp (HMC & DDD)
     SURFACE_00FE,                       // 0x00FE // Unused
     SURFACE_TRAPDOOR,                   // 0x00FF // Bowser Left trapdoor, has no action defined
+    SURFACE_TRIPLEJUMP,                   // 0x0100 // Triple jump surface
+    SURFACE_NOISE_NONSLIPPERY,             // 0x0101 // Non-slippery floor with noise, used in SL
 };
 
 // From Surface 0x1B to 0x1E

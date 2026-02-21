@@ -424,6 +424,9 @@ s32 mario_get_floor_class(struct MarioState *m) {
             case SURFACE_NO_CAM_COL_VERY_SLIPPERY:
                 floorClass = SURFACE_CLASS_VERY_SLIPPERY;
                 break;
+            case SURFACE_NOISE_NONSLIPPERY:
+                floorClass = SURFACE_CLASS_NOT_SLIPPERY;
+                break;
         }
     }
 
@@ -510,6 +513,9 @@ u32 mario_get_terrain_sound_addend(struct MarioState *m) {
 
                 case SURFACE_NOISE_SLIPPERY:
                     floorSoundType = 5;
+                    break;
+                case SURFACE_NOISE_NONSLIPPERY:
+                    floorSoundType = 4;
                     break;
             }
 
@@ -689,6 +695,22 @@ Bool32 set_mario_floor(struct MarioState *m, struct Surface *floor, f32 floorHei
         if (m->floor != NULL) m->floorYaw = SURFACE_YAW(floor);
     }
     m->floorHeight = floorHeight;
+
+    /* If the new floor is a triple-jump surface, trigger the triple jump when
+     * Mario lands on it (i.e. moving downward). This makes SURFACE_TRIPLEJUMP
+     * perform its intended action.
+     */
+    if (m->floor != NULL && m->floor->type == SURFACE_TRIPLEJUMP) {
+        /* Only trigger when Mario is actually on top of the surface. Some
+         * callers set the floor while Mario is still above it, so require
+         * Mario's position to be at (or very near) the floor height and his
+         * vertical velocity to be non-positive.
+         */
+        if ((m->pos[1] <= floorHeight + 1.0f) && (m->vel[1] <= 0.0f)) {
+            set_mario_action(m, ACT_TRIPLE_JUMP, 0);
+        }
+    }
+
     return (m->floor != NULL);
 }
 
@@ -1200,6 +1222,28 @@ void squish_mario_model(struct MarioState *m) {
             vec3f_set(m->marioObj->header.gfx.scale, 1.4f, 0.4f, 1.4f);
         }
     }
+
+        //
+    // --- Small squash & stretch (only when not squished) ---
+    //
+if (m->squishTimer == 0) {
+    f32 vy = m->vel[1];
+
+    if (vy > 60.0f) vy = 60.0f;
+    if (vy < -60.0f) vy = -60.0f;
+
+    f32 t = vy / 60.0f;
+
+    // Stronger stretch
+    f32 stretchY  = 1.0f + (t * 0.25f);   // ±25%
+    f32 stretchXZ = 1.0f - (t * 0.20f);   // ±20%
+
+    m->marioObj->header.gfx.scale[1] *= stretchY;
+    m->marioObj->header.gfx.scale[0] *= stretchXZ;
+    m->marioObj->header.gfx.scale[2] *= stretchXZ;
+}
+
+
 }
 
 #ifdef VANILLA_DEBUG
@@ -1259,10 +1303,20 @@ void update_mario_joystick_inputs(struct MarioState *m) {
     struct Controller *controller = m->controller;
     f32 mag = ((controller->stickMag / 64.0f) * (controller->stickMag / 64.0f)) * 64.0f;
 
-    if (m->squishTimer == 0) {
-        m->intendedMag = mag / 2.0f;
-    } else {
-        m->intendedMag = mag / 8.0f;
+    // Deadzone to prevent drift (tweakable)
+    const f32 DEADZONE = 1.0f;
+
+    // If stick is basically neutral → snap to zero
+    if (mag <= DEADZONE) {
+        m->intendedMag = 0.0f;
+    }
+    else {
+        // Stick is being pushed → apply your smoothing
+        if (m->squishTimer == 0) {
+            m->intendedMag = lerpf(m->intendedMag, mag / 2.0f, 0.25f);
+        } else {
+            m->intendedMag = lerpf(m->intendedMag, mag / 8.0f, 0.25f);
+        }
     }
 
     if (m->intendedMag > 0.0f) {

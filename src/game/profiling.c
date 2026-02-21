@@ -181,9 +181,22 @@ static void update_rdp_timers() {
     buffer_update(&all_profiling_data[PROFILER_TIME_PIPE], pipe, profile_buffer_index);
 }
 
-float profiler_get_fps() {
-    return (1000000.0f * PROFILING_BUFFER_SIZE) / (OS_CYCLES_TO_USEC(all_profiling_data[PROFILER_TIME_FPS].total));
+float profiler_get_fps(void) {
+    u64 total_cycles = all_profiling_data[PROFILER_TIME_FPS].total;
+
+    if (total_cycles == 0) {
+        return 0.0f;
+    }
+
+    u64 total_usec = OS_CYCLES_TO_USEC(total_cycles); // ensure this uses 64-bit internally
+
+    if (total_usec == 0) {
+        return 0.0f;
+    }
+
+    return (float)((double)PROFILING_BUFFER_SIZE * 1000000.0 / (double)total_usec);
 }
+
 
 u32 profiler_get_cpu_cycles() {
     u32 cpu_normal_time = all_profiling_data[PROFILER_TIME_TOTAL].total / PROFILING_BUFFER_SIZE;

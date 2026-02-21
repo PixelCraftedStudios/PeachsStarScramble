@@ -5,7 +5,6 @@
 
 /* fast64 object exports get inserted here */
 
-
 /* Global models that are loaded for every level */
 
 #define MODEL_MARIO                            0x01        // mario_geo
@@ -22,6 +21,9 @@ mgMoveBox - 0xE9
 New Pipe - 0xEA
 Silver Star - 0xEB
 Falling Rock - 0xEC
+Piranha Alt - 0xED
+Peng Boss - 0xEE
+Test Yoshi - 0xEF
 
 */
 #define MODEL_PEACH_TELL                  0xE4
@@ -33,6 +35,9 @@ Falling Rock - 0xEC
 #define MODEL_NEWPIPE                     0xEA
 #define MODEL_SILVERSTAR                  0xEB
 #define MODEL_FALLINGROCK                 0xEC
+#define MODEL_PIRANHAALT                  0xED
+#define MODEL_PENGBOSS                    0xEE
+#define MODEL_TESTYOSHI                   0xEF
 
 /* Various static level geometry, the geo layout differs but terrain object presets treat them the same.*/
 

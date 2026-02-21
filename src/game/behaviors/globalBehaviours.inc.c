@@ -114,100 +114,49 @@ void bhv_silver_star_loop(void) {
     }
 }
 
-//
-// ----------------------
-// CUSTOM TRAJECTORY FOLLOWER (Vec4s version)
-// ----------------------
-//
 
-// dedicated fields
-#define oRockWaypoint o->oF4
-#define oRockSpeed    o->oF8
+// Penguin Boss 
+enum PenguinBossStates {
+    PENGUIN_BOSS_STATE_TALK = 0,
+    PENGUIN_BOSS_STATE_START_BOSS = 1,
+};
 
-static s32 rock_follow_traj(const Vec4s *trajSeg) {
-    const Vec4s *traj = segmented_to_virtual(trajSeg);
+#define PENGUIN_BOSS_ACTION_FIGHT 1
 
-    s32 i = (s32)oRockWaypoint;
-    if (i < 0) i = oRockWaypoint = 0;
 
-    // end marker
-    if (traj[i][0] == 0)
-        return TRUE;
+void bhv_penguin_boss_message_init(void) {
+    // Dialog ID stored in the 2nd behavior param byte
+    o->oBehParams2ndByte = GET_BPARAM1(o->oBehParams);
 
-    f32 tx = traj[i][1];
-    f32 ty = traj[i][2];
-    f32 tz = traj[i][3];
+    o->oInteractType = INTERACT_TEXT;
+    o->oAction = PENGUIN_BOSS_STATE_TALK;
+    o->oIntangibleTimer = 0;
+    o->oSubAction = FALSE;
 
-    f32 dx = tx - o->oPosX;
-    f32 dy = ty - o->oPosY;
-    f32 dz = tz - o->oPosZ;
+    cur_obj_become_tangible();
 
-    f32 dist = sqrtf(dx*dx + dy*dy + dz*dz);
-
-    // accelerate like a rolling rock
-    oRockSpeed += 1.0f;
-    if (oRockSpeed > 45.0f)
-        oRockSpeed = 45.0f;
-
-    // if speed would overshoot, snap exactly to the point
-    if (oRockSpeed >= dist) {
-        o->oPosX = tx;
-        o->oPosY = ty;
-        o->oPosZ = tz;
-        oRockWaypoint++;
-        return FALSE;
-    }
-
-    // move toward point
-    if (dist > 0.0f) {
-        f32 inv = 1.0f / dist;
-        o->oPosX += dx * inv * oRockSpeed;
-        o->oPosY += dy * inv * oRockSpeed;
-        o->oPosZ += dz * inv * oRockSpeed;
-
-        o->oMoveAngleYaw = atan2s(dz, dx);
-    }
-
-    return FALSE;
 }
 
-//
-// ----------------------
-// FALLING ROCK — CUSTOM TRAJECTORY VERSION
-// ----------------------
-//
 
-void bhvFallingRock_loop(void) {
-    static s32 waitTimer = 0;
-
+void bhv_penguin_boss_message_loop(void) {
     switch (o->oAction) {
 
-        case 0:
-            // first frame: snap to first point, reset state
-            if (o->oTimer == 0) {
-                const Vec4s *traj = segmented_to_virtual(wf_area_1_spline_RockPath);
-                oRockWaypoint = 0;
-                oRockSpeed = 0.0f;
+        case PENGUIN_BOSS_STATE_TALK:
+            if (cur_obj_can_mario_activate_textbox_2(300.0f, 150.0f)) {
 
-                o->oPosX = traj[0][1];
-                o->oPosY = traj[0][2];
-                o->oPosZ = traj[0][3];
-            }
+                if (cur_obj_update_dialog_with_cutscene(
+                        MARIO_DIALOG_LOOK_UP,
+                        DIALOG_FLAG_TEXT_DEFAULT,
+                        CUTSCENE_DIALOG,
+                        DIALOG_017)) {
 
-            if (rock_follow_traj(wf_area_1_spline_RockPath)) {
-                o->oAction = 1;
-                waitTimer = 90;
-                oRockSpeed = 0.0f;
+                    o->oAction = PENGUIN_BOSS_STATE_START_BOSS;
+                }
             }
             break;
 
-        case 1:
-            if (--waitTimer <= 0) {
-                o->oAction = 0;
-                o->oTimer = 0;  // force re-init next time
-            }
+        case PENGUIN_BOSS_STATE_START_BOSS:
+            o->oAction = PENGUIN_BOSS_ACTION_FIGHT;
             break;
     }
-
-    load_object_collision_model();
 }

@@ -1,0 +1,13 @@
+extern const GeoLayout pengBoss_geo[];
+extern u8 pengBoss_Penguin_grp_rgba16[];
+extern Vtx pengBoss_Penguin_mesh_layer_1_vtx_cull[8];
+extern Vtx pengBoss_Penguin_mesh_layer_1_vtx_0[106];
+extern Gfx pengBoss_Penguin_mesh_layer_1_tri_0[];
+extern Vtx pengBoss_Penguin_mesh_layer_1_vtx_1[193];
+extern Gfx pengBoss_Penguin_mesh_layer_1_tri_1[];
+extern Gfx mat_pengBoss_Material_042_Penguin_grp_png_f3d[];
+extern Gfx mat_revert_pengBoss_Material_042_Penguin_grp_png_f3d[];
+extern Gfx mat_pengBoss_Material_041_Penguin_grp_png_f3d[];
+extern Gfx mat_revert_pengBoss_Material_041_Penguin_grp_png_f3d[];
+extern Gfx pengBoss_Penguin_mesh_layer_1[];
+extern Gfx pengBoss_final_revert_mesh_layer_1[];

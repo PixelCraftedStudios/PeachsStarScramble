@@ -1,0 +1,10 @@
+extern const GeoLayout testyoshi_geo[];
+extern u8 testyoshi_yoshi_grp_ci8[];
+extern u8 testyoshi_yoshi_grp_pal_rgba16[];
+extern Vtx testyoshi_yoshi_mesh_layer_1_vtx_cull[8];
+extern Vtx testyoshi_yoshi_mesh_layer_1_vtx_0[1525];
+extern Gfx testyoshi_yoshi_mesh_layer_1_tri_0[];
+extern Gfx mat_testyoshi_Material_097_yoshi_grp_png_f3d[];
+extern Gfx mat_revert_testyoshi_Material_097_yoshi_grp_png_f3d[];
+extern Gfx testyoshi_yoshi_mesh_layer_1[];
+extern Gfx testyoshi_final_revert_mesh_layer_1[];

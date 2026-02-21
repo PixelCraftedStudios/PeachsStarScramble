@@ -48,3 +48,7 @@
 #include "NewPipe/model.inc.c"
 #include "FallingRock/collision.inc.c"
 #include "FallingRock/model.inc.c"
+#include "piranhaalt/collision.inc.c"
+#include "piranhaalt/model.inc.c"
+#include "pengBoss/model.inc.c"
+#include "testyoshi/model.inc.c"

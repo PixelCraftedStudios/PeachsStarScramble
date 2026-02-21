@@ -1,5 +1,5 @@
 {
-    "date": "2026-01-23",
+    "date": "2026-02-19",
     "sample_bank": "streamed_audio",
     "envelopes": {
         "envelope": [
@@ -14,16 +14,10 @@
         "channel_1": {
             "release_rate": 10,
             "envelope": "envelope",
-            "sound": "temp_1"
-        },
-        "channel_2": {
-            "release_rate": 10,
-            "envelope": "envelope",
-            "sound": "temp_2"
+            "sound": "star"
         }
     },
     "instrument_list": [
-        "channel_1",
-        "channel_2"
+        "channel_1"
     ]
 }

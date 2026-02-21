@@ -13,9 +13,6 @@
         "09",
         "0A_mario_peach"
     ],
-    "01_cutscene_collect_star": [
-        "22"
-    ],
     "02_menu_title_screen": [
         "11"
     ],
@@ -49,9 +46,6 @@
     ],
     "0C_level_underground": [
         "15"
-    ],
-    "0D_menu_star_select": [
-        "16_course_start"
     ],
     "0E_event_powerup": [
         "17"
@@ -104,9 +98,6 @@
     "1E_cutscene_intro": [
         "1B"
     ],
-    "1F_cutscene_victory": [
-        "1A"
-    ],
     "20_cutscene_ending": [
         "23"
     ],
@@ -126,22 +117,37 @@
     "23_mushroom_hill": [
         "mushroom_hill"
     ],
-    "24_shellshore": [
-        "shellshore"
+    "24_overworld": [
+        "25"
     ],
-    "25_temp": [
-        "temp"
-    ],
-    "26_overworld": [
-        "overworld"
-    ],
-    "27_mbin": [
+    "25_mbin": [
         "mbin"
     ],
-    "28_select": [
-        "select"
-    ],
-    "29_sss" : [
+    "26_select": [
         "25"
+    ],
+    "27_sss": [
+        "25"
+    ],
+    "28_df": [
+        "25"
+    ],
+    "29_mariohouse": [
+        "25"
+    ],
+    "2A_frappe": [
+        "25"
+    ],
+    "2B_forest": [
+        "25"
+    ],
+    "1F_cutscene_victory": [
+        "star"
+    ],
+    "01_cutscene_collect_star": [
+        "starfr"
+    ],
+    "0D_menu_star_select": [
+        "act_select"
     ]
 }

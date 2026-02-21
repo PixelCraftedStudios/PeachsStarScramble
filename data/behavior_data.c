@@ -6112,6 +6112,8 @@ void bhvMovingPlatform_loop(void);
 void bhv_silver_star_init(void);
 void bhv_silver_star_loop(void);
 void bhvFallingRock_loop(void);
+void bhv_penguin_boss_message_init(void);
+void bhv_penguin_boss_message_loop(void);
 
 const BehaviorScript bhvShroomBoss[] = {
     BEGIN(OBJ_LIST_SURFACE),
@@ -6176,7 +6178,29 @@ const BehaviorScript bhvFallingRock[] = {
     SET_FLOAT(oDrawingDistance, 100000),
     SET_FLOAT(oCollisionDistance, 1000),
     BEGIN_LOOP(),
-        CALL_NATIVE(bhvFallingRock_loop),
+        //CALL_NATIVE(bhvFallingRock_loop),
         CALL_NATIVE(load_object_collision_model),
+    END_LOOP(),
+};
+
+const BehaviorScript bhvPenguinBoss[] = {
+    BEGIN(OBJ_LIST_GENACTOR),
+
+    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_ANGLE_TO_MARIO |
+                    OBJ_FLAG_ACTIVE_FROM_AFAR |
+                    OBJ_FLAG_COMPUTE_DIST_TO_MARIO |
+                    OBJ_FLAG_SET_FACE_YAW_TO_MOVE_YAW |
+                    OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+
+    // NO INTERACT TYPE
+    // NO HITBOX
+
+    DROP_TO_FLOOR(),
+    SET_HOME(),
+
+    CALL_NATIVE(bhv_penguin_boss_message_init),
+
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_penguin_boss_message_loop),
     END_LOOP(),
 };
