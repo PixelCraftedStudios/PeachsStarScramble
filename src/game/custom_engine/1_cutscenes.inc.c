@@ -7,7 +7,12 @@ static struct CutsceneEvent sMHEvents[] = {
         .spline = {
             bob_area_1_spline_mh_cam,
             bob_area_1_spline_mh_foc,
-            TIME(MODE_TIME, 100),
+        },
+    },
+    {
+        .type = CUTSCENE_EVENT_WAIT,
+        .wait = {
+            10,
         },
     },
     {
@@ -15,7 +20,12 @@ static struct CutsceneEvent sMHEvents[] = {
         .spline = {
             bob_area_1_spline_mh_cam2,
             bob_area_1_spline_mh_foc2,
-            TIME(MODE_TIME, 60),
+        },
+    },
+        {
+        .type = CUTSCENE_EVENT_WAIT,
+        .wait = {
+            10,
         },
     },
     {
@@ -23,15 +33,19 @@ static struct CutsceneEvent sMHEvents[] = {
         .spline = {
             bob_area_1_spline_mh_cam3,
             bob_area_1_spline_mh_foc3,
-            TIME(MODE_TIME, 60),
+        },
+    },
+        {
+        .type = CUTSCENE_EVENT_WAIT,
+        .wait = {
+            5,
         },
     },
     {
         .type = CUTSCENE_EVENT_SPLINE,
         .spline = {
-            bob_area_1_spline_mh_cam2,
-            bob_area_1_spline_mh_foc2,
-            TIME(MODE_TIME, 60),
+            bob_area_1_spline_mh_cam4,
+            bob_area_1_spline_mh_foc4,
         },
     },
 };
@@ -41,21 +55,30 @@ static struct CutsceneEvent sCourtyardEvents[] = {
         .type = CUTSCENE_EVENT_SPLINE,
         .spline = { castle_grounds_area_1_spline_Cutscene, castle_grounds_area_1_spline_Focus },
     },
+    {
+        .type = CUTSCENE_EVENT_WAIT,
+        .wait = {
+            10,
+        },
+    },
 };
 static struct CutsceneEvent sShellshockEvents[] = {
     {
         .type = CUTSCENE_EVENT_SPLINE,
-        .spline = { wf_area_1_spline_cam1, wf_area_1_spline_foc1 },
+        .spline = { wf_area_1_spline_nePos, wf_area_1_spline_neFoc },
     },
     {
         .type = CUTSCENE_EVENT_SPLINE,
-        .spline = { wf_area_1_spline_cam2, wf_area_1_spline_foc2 },
+        .spline = { wf_area_1_spline_s_001, wf_area_1_spline_c_001 },
     },
     {
         .type = CUTSCENE_EVENT_SPLINE,
-        .spline = { wf_area_1_spline_cam3, wf_area_1_spline_foc3 },
+        .spline = { wf_area_1_spline_s_002, wf_area_1_spline_c_002 },
     },
-
+    {
+        .type = CUTSCENE_EVENT_SPLINE,
+        .spline = { wf_area_1_spline_s_003, wf_area_1_spline_c_003 },
+    },
 };
 
 

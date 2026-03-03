@@ -1,6 +1,6 @@
 extern const GeoLayout mgMoveBox_geo[];
-extern u8 mgMoveBox_rr_textures_01000_rgba16_ci8[];
-extern u8 mgMoveBox_rr_textures_01000_rgba16_pal_rgba16[];
+extern u8 mgMoveBox__6__2__ci4_ci4[];
+extern u8 mgMoveBox__6__2__ci4_pal_rgba16[];
 extern Vtx mgMoveBox_MovableBox_mesh_layer_1_vtx_cull[8];
 extern Vtx mgMoveBox_MovableBox_mesh_layer_1_vtx_0[48];
 extern Gfx mgMoveBox_MovableBox_mesh_layer_1_tri_0[];

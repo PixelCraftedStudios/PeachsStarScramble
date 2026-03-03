@@ -518,8 +518,10 @@ s32 act_triple_jump(struct MarioState *m) {
     play_mario_sound(m, SOUND_ACTION_TERRAIN_JUMP, 0);
 
     /* Allow faster turning toward the analog stick while airborne in the triple jump. */
-    update_air_with_turn_fast(m);
-
+    if(m->actionArg == 1) {
+        update_air_with_turn_fast(m);
+    }
+    
     common_air_action_step(m, ACT_TRIPLE_JUMP_LAND, MARIO_ANIM_TRIPLE_JUMP, 0);
 #if ENABLE_RUMBLE
     if (m->action == ACT_TRIPLE_JUMP_LAND) {
@@ -670,7 +672,6 @@ s32 act_long_jump(struct MarioState *m) {
     }
 
     common_air_action_step(m, ACT_LONG_JUMP_LAND, animation, AIR_STEP_CHECK_LEDGE_GRAB);
-    update_air_with_turn_fast(m);
 #if ENABLE_RUMBLE
     if (m->action == ACT_LONG_JUMP_LAND) {
         queue_rumble_data(5, 40);

@@ -24,6 +24,7 @@ Falling Rock - 0xEC
 Piranha Alt - 0xED
 Peng Boss - 0xEE
 Test Yoshi - 0xEF
+New Bomb - 0xF0
 
 */
 #define MODEL_PEACH_TELL                  0xE4

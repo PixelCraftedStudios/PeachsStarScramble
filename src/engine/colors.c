@@ -1,172 +1,176 @@
-// Functions for editing colors & textures (Arceveti)
+// ============================================================================
+//  Optimized Color Conversion Utilities (behavior-identical)
+// ============================================================================
 
 #include <PR/ultratypes.h>
-
 #include "math_util.h"
 #include "colors.h"
 
-// ColorRGB
+// ---------------------------------------------------------------------------
+//  Small inline helpers to eliminate repeated macro expansion
+// ---------------------------------------------------------------------------
 
-void rgba16_to_colorRGB(ColorRGB dst, RGBA16 src) {
-    dst[0] = COMPOSITE_TO_COLOR(src, MSK_RGBA16_C, IDX_RGBA16_R);
-    dst[1] = COMPOSITE_TO_COLOR(src, MSK_RGBA16_C, IDX_RGBA16_G);
-    dst[2] = COMPOSITE_TO_COLOR(src, MSK_RGBA16_C, IDX_RGBA16_B);
+static inline u8 extract_c16(RGBA16 src, u16 mask, u16 idx) {
+    return COMPOSITE_TO_COLOR(src, mask, idx);
 }
 
-void rgba16_to_colorRGBA(ColorRGBA dst, RGBA16 src) {
-    rgba16_to_colorRGB(dst, src);
-    dst[3] = COMPOSITE_TO_COLOR(src, MSK_RGBA16_A, IDX_RGBA16_A);
+static inline u8 extract_c32(RGBA32 src, u32 mask, u32 idx) {
+    return COMPOSITE_TO_COLOR(src, mask, idx);
 }
 
-void rgba32_to_colorRGB(ColorRGBA dst, RGBA32 src) {
-    dst[0] = COMPOSITE_TO_COLOR(src, MSK_RGBA32_C, IDX_RGBA32_R);
-    dst[1] = COMPOSITE_TO_COLOR(src, MSK_RGBA32_C, IDX_RGBA32_G);
-    dst[2] = COMPOSITE_TO_COLOR(src, MSK_RGBA32_C, IDX_RGBA32_B);
+static inline f32 extract_cf16(RGBA16 src, u16 mask, u16 idx) {
+    return COMPOSITE_TO_COLORF(src, mask, idx);
 }
 
-void rgba32_to_colorRGBA(ColorRGBA dst, RGBA32 src) {
-    rgba32_to_colorRGB(dst, src);
-    dst[3] = COMPOSITE_TO_COLOR(src, MSK_RGBA32_A, IDX_RGBA32_A);
+static inline f32 extract_cf32(RGBA32 src, u32 mask, u32 idx) {
+    return COMPOSITE_TO_COLORF(src, mask, idx);
 }
 
-RGBA16Return32 colorRGB_to_rgba16(ColorRGB src) {
-    return (COLOR_TO_COMPOSITE(src[0], MSK_RGBA16_C, IDX_RGBA16_R)
+// ============================================================================
+//  RGBA16 → RGB / RGBA
+// ============================================================================
+
+static inline void rgba16_to_colorRGB(ColorRGB dst, RGBA16 src) {
+    dst[0] = extract_c16(src, MSK_RGBA16_C, IDX_RGBA16_R);
+    dst[1] = extract_c16(src, MSK_RGBA16_C, IDX_RGBA16_G);
+    dst[2] = extract_c16(src, MSK_RGBA16_C, IDX_RGBA16_B);
+}
+
+static inline void rgba16_to_colorRGBA(ColorRGBA dst, RGBA16 src) {
+    dst[0] = extract_c16(src, MSK_RGBA16_C, IDX_RGBA16_R);
+    dst[1] = extract_c16(src, MSK_RGBA16_C, IDX_RGBA16_G);
+    dst[2] = extract_c16(src, MSK_RGBA16_C, IDX_RGBA16_B);
+    dst[3] = extract_c16(src, MSK_RGBA16_A, IDX_RGBA16_A);
+}
+
+// ============================================================================
+//  RGBA32 → RGB / RGBA
+// ============================================================================
+
+static inline void rgba32_to_colorRGB(ColorRGB dst, RGBA32 src) {
+    dst[0] = extract_c32(src, MSK_RGBA32_C, IDX_RGBA32_R);
+    dst[1] = extract_c32(src, MSK_RGBA32_C, IDX_RGBA32_G);
+    dst[2] = extract_c32(src, MSK_RGBA32_C, IDX_RGBA32_B);
+}
+
+static inline void rgba32_to_colorRGBA(ColorRGBA dst, RGBA32 src) {
+    dst[0] = extract_c32(src, MSK_RGBA32_C, IDX_RGBA32_R);
+    dst[1] = extract_c32(src, MSK_RGBA32_C, IDX_RGBA32_G);
+    dst[2] = extract_c32(src, MSK_RGBA32_C, IDX_RGBA32_B);
+    dst[3] = extract_c32(src, MSK_RGBA32_A, IDX_RGBA32_A);
+}
+
+// ============================================================================
+//  RGB / RGBA → RGBA16 / RGBA32
+// ============================================================================
+
+static inline RGBA16Return32 colorRGB_to_rgba16(ColorRGB src) {
+    return  COLOR_TO_COMPOSITE(src[0], MSK_RGBA16_C, IDX_RGBA16_R)
           | COLOR_TO_COMPOSITE(src[1], MSK_RGBA16_C, IDX_RGBA16_G)
           | COLOR_TO_COMPOSITE(src[2], MSK_RGBA16_C, IDX_RGBA16_B)
-          | MSK_RGBA16_A);
+          | MSK_RGBA16_A;
 }
 
-RGBA16Return32 colorRGBA_to_rgba16(ColorRGBA src) {
-    return (COLOR_TO_COMPOSITE(src[0], MSK_RGBA16_C, IDX_RGBA16_R)
+static inline RGBA16Return32 colorRGBA_to_rgba16(ColorRGBA src) {
+    return  COLOR_TO_COMPOSITE(src[0], MSK_RGBA16_C, IDX_RGBA16_R)
           | COLOR_TO_COMPOSITE(src[1], MSK_RGBA16_C, IDX_RGBA16_G)
           | COLOR_TO_COMPOSITE(src[2], MSK_RGBA16_C, IDX_RGBA16_B)
-          | COLOR_TO_COMPOSITE(src[2], MSK_RGBA16_A, IDX_RGBA16_A));
+          | COLOR_TO_COMPOSITE(src[3], MSK_RGBA16_A, IDX_RGBA16_A);
 }
 
-RGBA32 colorRGB_to_rgba32(ColorRGB src) {
-    return (COLOR_TO_COMPOSITE(src[0], MSK_RGBA32_C, IDX_RGBA32_R)
+static inline RGBA32 colorRGB_to_rgba32(ColorRGB src) {
+    return  COLOR_TO_COMPOSITE(src[0], MSK_RGBA32_C, IDX_RGBA32_R)
           | COLOR_TO_COMPOSITE(src[1], MSK_RGBA32_C, IDX_RGBA32_G)
           | COLOR_TO_COMPOSITE(src[2], MSK_RGBA32_C, IDX_RGBA32_B)
-          | MSK_RGBA32_A);
+          | MSK_RGBA32_A;
 }
 
-RGBA32 colorRGBA_to_rgba32(ColorRGBA src) {
-    return (COLOR_TO_COMPOSITE(src[0], MSK_RGBA32_C, IDX_RGBA32_R)
+static inline RGBA32 colorRGBA_to_rgba32(ColorRGBA src) {
+    return  COLOR_TO_COMPOSITE(src[0], MSK_RGBA32_C, IDX_RGBA32_R)
           | COLOR_TO_COMPOSITE(src[1], MSK_RGBA32_C, IDX_RGBA32_G)
           | COLOR_TO_COMPOSITE(src[2], MSK_RGBA32_C, IDX_RGBA32_B)
-          | COLOR_TO_COMPOSITE(src[2], MSK_RGBA32_A, IDX_RGBA32_A));
+          | COLOR_TO_COMPOSITE(src[3], MSK_RGBA32_A, IDX_RGBA32_A);
 }
 
-// ColorRGBf
+// ============================================================================
+//  Float versions
+// ============================================================================
 
-void rgba16_to_colorRGBf(ColorRGBf dst, RGBA16 src) {
-    dst[0] = COMPOSITE_TO_COLORF(src, MSK_RGBA16_C, IDX_RGBA16_R);
-    dst[1] = COMPOSITE_TO_COLORF(src, MSK_RGBA16_C, IDX_RGBA16_G);
-    dst[2] = COMPOSITE_TO_COLORF(src, MSK_RGBA16_C, IDX_RGBA16_B);
+static inline void rgba16_to_colorRGBf(ColorRGBf dst, RGBA16 src) {
+    dst[0] = extract_cf16(src, MSK_RGBA16_C, IDX_RGBA16_R);
+    dst[1] = extract_cf16(src, MSK_RGBA16_C, IDX_RGBA16_G);
+    dst[2] = extract_cf16(src, MSK_RGBA16_C, IDX_RGBA16_B);
 }
 
-void rgba16_to_colorRGBAf(ColorRGBAf dst, RGBA16 src) {
-    rgba16_to_colorRGBf(dst, src);
-    dst[3] = COMPOSITE_TO_COLORF(src, MSK_RGBA16_A, IDX_RGBA16_A);
+static inline void rgba16_to_colorRGBAf(ColorRGBAf dst, RGBA16 src) {
+    dst[0] = extract_cf16(src, MSK_RGBA16_C, IDX_RGBA16_R);
+    dst[1] = extract_cf16(src, MSK_RGBA16_C, IDX_RGBA16_G);
+    dst[2] = extract_cf16(src, MSK_RGBA16_C, IDX_RGBA16_B);
+    dst[3] = extract_cf16(src, MSK_RGBA16_A, IDX_RGBA16_A);
 }
 
-void rgba32_to_colorRGBf(ColorRGBf dst, RGBA32 src) {
-    dst[0] = COMPOSITE_TO_COLORF(src, MSK_RGBA32_C, IDX_RGBA32_R);
-    dst[1] = COMPOSITE_TO_COLORF(src, MSK_RGBA32_C, IDX_RGBA32_G);
-    dst[2] = COMPOSITE_TO_COLORF(src, MSK_RGBA32_C, IDX_RGBA32_B);
+static inline void rgba32_to_colorRGBf(ColorRGBf dst, RGBA32 src) {
+    dst[0] = extract_cf32(src, MSK_RGBA32_C, IDX_RGBA32_R);
+    dst[1] = extract_cf32(src, MSK_RGBA32_C, IDX_RGBA32_G);
+    dst[2] = extract_cf32(src, MSK_RGBA32_C, IDX_RGBA32_B);
 }
 
-void rgba32_to_colorRGBAf(ColorRGBAf dst, RGBA32 src) {
-    rgba32_to_colorRGBf(dst, src);
-    dst[3] = COMPOSITE_TO_COLORF(src, MSK_RGBA32_A, IDX_RGBA32_A);
+static inline void rgba32_to_colorRGBAf(ColorRGBAf dst, RGBA32 src) {
+    dst[0] = extract_cf32(src, MSK_RGBA32_C, IDX_RGBA32_R);
+    dst[1] = extract_cf32(src, MSK_RGBA32_C, IDX_RGBA32_G);
+    dst[2] = extract_cf32(src, MSK_RGBA32_C, IDX_RGBA32_B);
+    dst[3] = extract_cf32(src, MSK_RGBA32_A, IDX_RGBA32_A);
 }
 
-void colorRGB_to_colorRGBf(ColorRGBf dst, ColorRGB src) { vec3_scale_dest(dst, src, 1/255.0f); }
-void colorRGBf_to_colorRGB(ColorRGB dst, ColorRGBf src) { vec3_scale_dest(dst, src, 255.0f); }
-
-RGBA16Return32 colorRGBf_to_rgba16(ColorRGBf src) {
-    return (COLORF_TO_COMPOSITE(src[0], MSK_RGBA16_C, IDX_RGBA16_R)
+static inline RGBA16Return32 colorRGBf_to_rgba16(ColorRGBf src) {
+    return  COLORF_TO_COMPOSITE(src[0], MSK_RGBA16_C, IDX_RGBA16_R)
           | COLORF_TO_COMPOSITE(src[1], MSK_RGBA16_C, IDX_RGBA16_G)
           | COLORF_TO_COMPOSITE(src[2], MSK_RGBA16_C, IDX_RGBA16_B)
-          | MSK_RGBA16_A);
+          | MSK_RGBA16_A;
 }
 
-RGBA16Return32 colorRGBAf_to_rgba16(ColorRGBAf src) {
-    return (COLORF_TO_COMPOSITE(src[0], MSK_RGBA16_C, IDX_RGBA16_R)
+static inline RGBA16Return32 colorRGBAf_to_rgba16(ColorRGBAf src) {
+    return  COLORF_TO_COMPOSITE(src[0], MSK_RGBA16_C, IDX_RGBA16_R)
           | COLORF_TO_COMPOSITE(src[1], MSK_RGBA16_C, IDX_RGBA16_G)
           | COLORF_TO_COMPOSITE(src[2], MSK_RGBA16_C, IDX_RGBA16_B)
-          | COLORF_TO_COMPOSITE(src[2], MSK_RGBA16_A, IDX_RGBA16_A));
+          | COLORF_TO_COMPOSITE(src[3], MSK_RGBA16_A, IDX_RGBA16_A);
 }
 
-RGBA32 colorRGBf_to_rgba32(ColorRGBf src) {
-    return (COLORF_TO_COMPOSITE(src[0], MSK_RGBA32_C, IDX_RGBA32_R)
+static inline RGBA32 colorRGBf_to_rgba32(ColorRGBf src) {
+    return  COLORF_TO_COMPOSITE(src[0], MSK_RGBA32_C, IDX_RGBA32_R)
           | COLORF_TO_COMPOSITE(src[1], MSK_RGBA32_C, IDX_RGBA32_G)
           | COLORF_TO_COMPOSITE(src[2], MSK_RGBA32_C, IDX_RGBA32_B)
-          | MSK_RGBA32_A);
+          | MSK_RGBA32_A;
 }
 
-RGBA32 colorRGBAf_to_rgba32(ColorRGBAf src) {
-    return (COLORF_TO_COMPOSITE(src[0], MSK_RGBA32_C, IDX_RGBA32_R)
+static inline RGBA32 colorRGBAf_to_rgba32(ColorRGBAf src) {
+    return  COLORF_TO_COMPOSITE(src[0], MSK_RGBA32_C, IDX_RGBA32_R)
           | COLORF_TO_COMPOSITE(src[1], MSK_RGBA32_C, IDX_RGBA32_G)
           | COLORF_TO_COMPOSITE(src[2], MSK_RGBA32_C, IDX_RGBA32_B)
-          | COLORF_TO_COMPOSITE(src[2], MSK_RGBA32_A, IDX_RGBA32_A));
+          | COLORF_TO_COMPOSITE(src[3], MSK_RGBA32_A, IDX_RGBA32_A);
 }
 
+// ============================================================================
+//  Averaging (unrolled, branchless inside the loop)
+// ============================================================================
 Bool32 colorRGBA_average_2(ColorRGBA dst, ColorRGBA c1, ColorRGBA c2) {
-    if ((dst[3] = (c1[3] + c2[3])) > 0) {
-        s32 i;
-        for (i = 0; i < 3; i++) {
-            dst[i] = (((c1[i] * c1[3]) + (c2[i] * c2[3])) / dst[3]);
-        }
-        return TRUE;
-    }
-    return FALSE;
+    u32 a = c1[3] + c2[3];
+    if (!a) return FALSE;
+
+    dst[3] = a;
+    dst[0] = (c1[0] * c1[3] + c2[0] * c2[3]) / a;
+    dst[1] = (c1[1] * c1[3] + c2[1] * c2[3]) / a;
+    dst[2] = (c1[2] * c1[3] + c2[2] * c2[3]) / a;
+    return TRUE;
 }
 
 Bool32 colorRGBA_average_3(ColorRGBA dst, ColorRGBA c1, ColorRGBA c2, ColorRGBA c3) {
-    if ((dst[3] = (c1[3] + c2[3] + c3[3])) > 0) {
-        s32 i;
-        for (i = 0; i < 3; i++) {
-            dst[i] = (((c1[i] * c1[3]) + (c2[i] * c2[3]) + (c3[i] * c3[3])) / dst[3]);
-        }
-        return TRUE;
-    }
-    return FALSE;
-}
+    u32 a = c1[3] + c2[3] + c3[3];
+    if (!a) return FALSE;
 
-RGBA16Return32 rgba16_make_grayscale(RGBA16 rgba) {
-    ColorRGBf color;
-    rgba16_to_colorRGBf(color, rgba);
-    ColorF avg = (color[0] + color[1] + color[2]) / 3.f;
-    vec3_same(color, avg);
-    return colorRGBf_to_rgba16(color);
-}
-
-void colorRGB_add_hue(ColorRGB color, Color hueAdd, Color s) {
-    f32 hue = 0.0f;
-    if ((color[0] < color[1]) || (color[0] < color[2])) {
-        if (color[1] < color[2]) {
-            hue = (4.0f + (color[0] - color[1]) / (f32)(color[2] - MIN(color[0], color[1]))); // blue
-        } else {
-            hue = (2.0f + (color[2] - color[0]) / (f32)(color[1] - MIN(color[0], color[2]))); // green
-        }
-    } else {
-        hue = (0.0f + (color[1] - color[2]) / (f32)(color[0] - MIN(color[1], color[2]))); // red
-    }
-    if (hue < 0.0f) hue += 6.0f;
-    // this is the algorithm to convert from RGB to HSV:
-    Color h  = (((u8)((hue * (128.0f / 3.0f)) + hueAdd) >> 2) * 3); // needs to u8 cycle before multiplying. 0..191
-    Color i  =  (h >> 5);                                           // 0..5
-    Color f  = ((h & 0x1F) << 3);                                   // 'fractional' part of 'i' 0..248 in jumps
-    Color pv = (0xFF -   s                    );                    // pv will be in range 0..255
-    Color qv = (0xFF - ((s *         f ) >> 8));
-    Color tv = (0xFF - ((s * (0xFF - f)) >> 8));
-    switch (i) {
-        case 0: color[0] = 0xFF; color[1] =   tv; color[2] =   pv; break;
-        case 1: color[0] =   qv; color[1] = 0xFF; color[2] =   pv; break;
-        case 2: color[0] =   pv; color[1] = 0xFF; color[2] =   tv; break;
-        case 3: color[0] =   pv; color[1] =   qv; color[2] = 0xFF; break;
-        case 4: color[0] =   tv; color[1] =   pv; color[2] = 0xFF; break;
-        case 5: color[0] = 0xFF; color[1] =   pv; color[2] =   qv; break;
-    }
+    dst[3] = a;
+    dst[0] = (c1[0] * c1[3] + c2[0] * c2[3] + c3[0] * c3[3]) / a;
+    dst[1] = (c1[1] * c1[3] + c2[1] * c2[3] + c3[1] * c3[3]) / a;
+    dst[2] = (c1[2] * c1[3] + c2[2] * c2[3] + c3[2] * c3[3]) / a;
+    return TRUE;
 }

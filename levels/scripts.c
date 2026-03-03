@@ -78,7 +78,6 @@ const LevelScript level_main_scripts_entry[] = {
     LOAD_MODEL_FROM_GEO(MODEL_BOUNCINGSHROOM, bouncingShroom_geo),
     LOAD_MODEL_FROM_GEO(MODEL_SHROOMBOSS, shroomBoss_geo),
 
-
     LOAD_MODEL_FROM_GEO(MODEL_MARIO,                   mario_geo),
     
     LOAD_MODEL_FROM_GEO(MODEL_SMOKE,                   smoke_geo),

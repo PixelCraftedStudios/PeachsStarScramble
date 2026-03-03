@@ -650,7 +650,7 @@ const Collision castle_grounds_area_2_collision[] = {
 	COL_TRI(229, 222, 230),
 	COL_TRI(210, 229, 230),
 	COL_TRI(210, 230, 211),
-	COL_TRI_INIT(SURFACE_NOISE_DEFAULT, 104),
+	COL_TRI_INIT(SURFACE_NOISE_NONSLIPPERY, 104),
 	COL_TRI(20, 15, 14),
 	COL_TRI(8, 49, 1),
 	COL_TRI(11, 61, 84),
@@ -929,5 +929,7 @@ const Collision castle_grounds_area_2_collision[] = {
 	COL_TRI(335, 338, 339),
 	COL_TRI(335, 339, 336),
 	COL_TRI_STOP(),
+	COL_WATER_BOX_INIT(1),
+	COL_WATER_BOX(0x00, -2285, 1010, 1585, 4880, -299),
 	COL_END()
 };

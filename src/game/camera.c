@@ -3646,15 +3646,20 @@ void evaluate_catmull_rom(f32 u, Vec3f Q, Vec3f P0, Vec3f P1, Vec3f P2, Vec3f P3
 }
 
 // Move point along Catmull-Rom spline
-s32 move_point_along_spline(Vec3f p, struct CutsceneSplinePoint spline[], s16 *splineSegment, f32 *progress) {
+s32 move_point_along_spline(Vec3f p, struct CutsceneSplinePoint spline[],
+                            s16 *splineSegment, f32 *progress)
+{
     s32 finished = FALSE;
     Vec3f controlPoints[4];
     s16 segment = *splineSegment;
 
-    // Safety
-    if (segment < 0) { segment = 0; *splineSegment = 0; *progress = 0.0f; }
+    if (segment < 0) {
+        segment = 0;
+        *splineSegment = 0;
+        *progress = 0.0f;
+    }
 
-    // Check we have enough points (segment+3)
+    // Validate
     if (spline[segment].index == -1 ||
         spline[segment+1].index == -1 ||
         spline[segment+2].index == -1 ||
@@ -3662,37 +3667,50 @@ s32 move_point_along_spline(Vec3f p, struct CutsceneSplinePoint spline[], s16 *s
         return TRUE;
     }
 
-    // Load 4 points
     for (s32 i = 0; i < 4; i++) {
-        controlPoints[i][0] = spline[segment+i].point[0];
-        controlPoints[i][1] = spline[segment+i].point[1];
-        controlPoints[i][2] = spline[segment+i].point[2];
+        vec3f_copy(controlPoints[i], spline[segment+i].point);
     }
 
-    // Evaluate position
-    evaluate_catmull_rom(*progress, p, controlPoints[0], controlPoints[1], controlPoints[2], controlPoints[3]);
+    // Detect last segment
+    s32 isLastSegment = (spline[segment+4].index == -1);
 
-    // Speed interpolation (optional)
-    f32 firstSpeed  = (spline[segment+1].speed != 0) ? (1.0f / spline[segment+1].speed) : 0.01f;
-    f32 secondSpeed = (spline[segment+2].speed != 0) ? (1.0f / spline[segment+2].speed) : 0.01f;
-    f32 t = *progress;
-    t = t*t*(3.0f - 2.0f*t); // smoothstep
-    f32 progressChange = (secondSpeed - firstSpeed) * t + firstSpeed;
+    // Normal speed
+    f32 speed = (spline[segment+1].speed != 0)
+        ? (1.0f / spline[segment+1].speed)
+        : 0.01f;
 
-    // Update progress
-    *progress += progressChange;
+    *progress += speed;
 
-    // Handle segment transition
+    // Clamp cleanly
     if (*progress >= 1.0f) {
-        *progress -= 1.0f;
-        (*splineSegment)++;
+        *progress = 1.0f;
+    }
 
-        // End check
-        if (spline[*splineSegment+3].index == -1) {
-            *splineSegment = 0;
-            *progress = 0.0f;
+    // ---------
+    // EASE POSITION (NOT SPEED)
+    // ---------
+    f32 evalT = *progress;
+
+    if (isLastSegment) {
+        // Proper ease-out curve
+        // Smooth and guaranteed finish
+        evalT = 1.0f - (1.0f - evalT) * (1.0f - evalT);
+    }
+
+    evaluate_catmull_rom(evalT, p,
+        controlPoints[0], controlPoints[1],
+        controlPoints[2], controlPoints[3]);
+
+    // Finish logic
+    if (*progress >= 1.0f) {
+
+        if (isLastSegment) {
             finished = TRUE;
+            return finished;
         }
+
+        *progress = 0.0f;
+        (*splineSegment)++;
     }
 
     return finished;
@@ -10535,7 +10553,7 @@ u8 sZoomOutAreaMasks[] = {
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 0, 0, 0, 0), // Unused         | Unused
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // BBH            | CCM
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // CASTLE_INSIDE  | HMC
-	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 1, 0, 0), // SSL            | BOB
+	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 1, 1, 0), // SSL            | BOB
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // SL             | WDW
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // JRB            | THI
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // TTC            | RR

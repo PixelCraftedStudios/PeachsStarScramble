@@ -23,7 +23,7 @@ void bhv_bouncingShroom_loop(void) {
         }
 
         // Force triple jump
-        set_mario_action(m, ACT_TRIPLE_JUMP, 0);
+        set_mario_action(m, ACT_TRIPLE_JUMP, 1);
         set_mario_animation(m, ACT_TRIPLE_JUMP);
 
         // Squash mushroom

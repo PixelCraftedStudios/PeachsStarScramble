@@ -707,7 +707,7 @@ Bool32 set_mario_floor(struct MarioState *m, struct Surface *floor, f32 floorHei
          * vertical velocity to be non-positive.
          */
         if ((m->pos[1] <= floorHeight + 1.0f) && (m->vel[1] <= 0.0f)) {
-            set_mario_action(m, ACT_TRIPLE_JUMP, 0);
+            set_mario_action(m, ACT_TRIPLE_JUMP, 1);
         }
     }
 

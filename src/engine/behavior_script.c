@@ -39,10 +39,15 @@ UNUSED static void goto_behavior_unused(const BehaviorScript *bhvAddr) {
 
 // Update an object's graphical position and rotation to match its real position and rotation.
 void obj_update_gfx_pos_and_angle(struct Object *obj) {
-    vec3_copy_y_off(obj->header.gfx.pos, &obj->oPosVec, obj->oGraphYOffset);
-    obj->header.gfx.angle[0] = (obj->oFaceAnglePitch & 0xFFFF);
-    obj->header.gfx.angle[1] = (obj->oFaceAngleYaw   & 0xFFFF);
-    obj->header.gfx.angle[2] = (obj->oFaceAngleRoll  & 0xFFFF);
+    // Position
+    obj->header.gfx.pos[0] = obj->oPosX;
+    obj->header.gfx.pos[1] = obj->oPosY + obj->oGraphYOffset;
+    obj->header.gfx.pos[2] = obj->oPosZ;
+
+    // Angles (already s16, no need to mask)
+    obj->header.gfx.angle[0] = obj->oFaceAnglePitch;
+    obj->header.gfx.angle[1] = obj->oFaceAngleYaw;
+    obj->header.gfx.angle[2] = obj->oFaceAngleRoll;
 }
 
 #ifdef OBJ_OPACITY_BY_CAM_DIST

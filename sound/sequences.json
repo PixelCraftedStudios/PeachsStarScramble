@@ -120,9 +120,6 @@
     "24_overworld": [
         "25"
     ],
-    "25_mbin": [
-        "mbin"
-    ],
     "26_select": [
         "25"
     ],
@@ -149,5 +146,8 @@
     ],
     "0D_menu_star_select": [
         "act_select"
+    ],
+    "25_happyveg": [
+        "happyveg"
     ]
 }

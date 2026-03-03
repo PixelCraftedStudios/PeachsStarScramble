@@ -1,5 +1,5 @@
 {
-    "date": "2026-01-24",
+    "date": "2026-02-28",
     "sample_bank": "streamed_audio",
     "envelopes": {
         "envelope": [
@@ -14,7 +14,7 @@
         "channel_1": {
             "release_rate": 10,
             "envelope": "envelope",
-            "sound": "mbin"
+            "sound": "happyveg"
         }
     },
     "instrument_list": [

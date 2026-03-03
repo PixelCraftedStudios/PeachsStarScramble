@@ -2,7 +2,7 @@
 
 #include "sm64.h"
 #include "geo_misc.h"
-
+#include "game/rendering_graph_node.h"
 #include "area.h"
 #include "engine/math_util.h"
 #include "level_update.h"
@@ -16,6 +16,10 @@
 #include "rendering_graph_node.h"
 #include "save_file.h"
 #include "segment2.h"
+
+
+#include "game/object_helpers.h"
+#include "engine/graph_node.h"
 
 /**
  * @file geo_misc.c
@@ -194,3 +198,4 @@ Gfx *geo_exec_cake_end_screen(s32 callContext, struct GraphNode *node, UNUSED Ma
 
     return displayList;
 }
+

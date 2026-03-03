@@ -33,25 +33,19 @@ the cake!"
 
 
 DEFINE_DIALOG(DIALOG_001, 1, 4, 95, 200, _("\
-Watch out! If you wander\n\
-around here, you're liable\n\
-to be " PLASTERED " by a\n\
-water bomb!\n\
-Those enemy Bob-ombs love\n\
-to fight, and they're\n\
-always finding ways to\n\
-attack.\n\
-This meadow has become\n\
-a battlefield ever since\n\
-the Big Bob-omb got his\n\
-paws on the Power Star.\n\
-Can you recover the Star\n\
-for us? Cross the bridge\n\
-and go left up the path\n\
-to find the Big Bob-omb.\n\
-Please come back to see\n\
-me after you've retrieved\n\
-the Power Star!"))
+Hey! Did you know that if\n\
+you jump into a wall, then\n\
+you can do a wall slide?\n\
+Try it out! Just jump and\n\
+then hold towards the wall\n\
+to slide down it. You can\n\
+also jump off the wall to\n\
+do a wall jump, which is\n\
+super useful for getting to\n\
+high places. Try wall jumping\n\
+off the wall to get to\n\
+the other side!\n\
+    "))
 
 DEFINE_DIALOG(DIALOG_002, 1, 4, 95, 200, _("\
 Hey, you! It's dangerous\n\
