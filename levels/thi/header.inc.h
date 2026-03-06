@@ -9,7 +9,7 @@ extern u8 thi_dl_cloud1_ci4_pal_rgba16[];
 extern u8 thi_dl_sun_ia8[];
 extern u8 thi_dl_cloud_ia8[];
 extern Vtx thi_dl_Plane_mesh_layer_1_vtx_cull[8];
-extern Vtx thi_dl_Plane_mesh_layer_1_vtx_0[12];
+extern Vtx thi_dl_Plane_mesh_layer_1_vtx_0[13];
 extern Gfx thi_dl_Plane_mesh_layer_1_tri_0[];
 extern Vtx thi_dl_Plane_mesh_layer_1_vtx_1[27];
 extern Gfx thi_dl_Plane_mesh_layer_1_tri_1[];

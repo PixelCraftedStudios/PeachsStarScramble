@@ -382,6 +382,7 @@ void mario_set_forward_vel(struct MarioState *m, f32 forwardVel) {
 
     m->vel[0] = (f32) m->slideVelX;
     m->vel[2] = (f32) m->slideVelZ;
+
 }
 
 /**
@@ -905,7 +906,6 @@ u32 set_mario_action_moving(struct MarioState *m, u32 action, UNUSED u32 actionA
                     m->forwardVel = mag;
                 }
             }
-
             m->marioObj->oMarioWalkingPitch = 0;
             break;
 

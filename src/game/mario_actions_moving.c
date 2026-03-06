@@ -787,7 +787,7 @@ s32 act_walking(struct MarioState *m) {
 
     vec3f_copy(startPos, m->pos);
     update_walking_speed(m);
-
+    m->particleFlags |= PARTICLE_DUST;
     switch (perform_ground_step(m)) {
         case GROUND_STEP_LEFT_GROUND:
             set_mario_action(m, ACT_FREEFALL, 0);
