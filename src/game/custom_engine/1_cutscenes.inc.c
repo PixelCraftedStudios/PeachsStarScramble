@@ -63,22 +63,20 @@ static struct CutsceneEvent sCourtyardEvents[] = {
     },
 };
 static struct CutsceneEvent sShellshockEvents[] = {
+
     {
         .type = CUTSCENE_EVENT_SPLINE,
-        .spline = { wf_area_1_spline_nePos, wf_area_1_spline_neFoc },
+        .spline = { wf_area_1_spline_cam, wf_area_1_spline_foc},
     },
     {
         .type = CUTSCENE_EVENT_SPLINE,
-        .spline = { wf_area_1_spline_s_001, wf_area_1_spline_c_001 },
+        .spline = { wf_area_1_spline_cam_001, wf_area_1_spline_foc_001 },
     },
     {
         .type = CUTSCENE_EVENT_SPLINE,
-        .spline = { wf_area_1_spline_s_002, wf_area_1_spline_c_002 },
+        .spline = { wf_area_1_spline_cam_002, wf_area_1_spline_foc_002 },
     },
-    {
-        .type = CUTSCENE_EVENT_SPLINE,
-        .spline = { wf_area_1_spline_s_003, wf_area_1_spline_c_003 },
-    },
+
 };
 
 

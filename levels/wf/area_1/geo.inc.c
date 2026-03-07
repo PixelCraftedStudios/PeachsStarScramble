@@ -3,10 +3,9 @@
 const GeoLayout wf_area_1_geo[] = {
 	GEO_NODE_START(),
 	GEO_OPEN_NODE(),
-		GEO_ROTATION_NODE_WITH_DL(LAYER_OPAQUE, 0, 0, 180, wf_dl_bob_area_1_collision_mesh_layer_1),
+		GEO_TRANSLATE_ROTATE_WITH_DL(LAYER_OPAQUE, -1434, -1814, -2870, 0, 90, 0, wf_dl_Cylinder_mesh_layer_1),
+		GEO_TRANSLATE_NODE_WITH_DL(LAYER_OPAQUE, 0, -268, 0, wf_dl_Water_Box_Mesh_mesh_layer_1),
 		GEO_OPEN_NODE(),
-			GEO_DISPLAY_LIST(LAYER_ALPHA, wf_dl_bob_area_1_collision_mesh_layer_4),
-			GEO_DISPLAY_LIST(LAYER_ALPHA, wf_dl_final_revert_mesh_layer_4),
 			GEO_DISPLAY_LIST(LAYER_OPAQUE, wf_dl_final_revert_mesh_layer_1),
 		GEO_CLOSE_NODE(),
 	GEO_CLOSE_NODE(),

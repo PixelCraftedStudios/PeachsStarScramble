@@ -479,6 +479,10 @@ s32 act_jump(struct MarioState *m) {
     if (m->input & INPUT_Z_PRESSED) {
         return set_mario_action(m, ACT_GROUND_POUND, 0);
     }
+    if (gMarioState->controller->buttonDown & L_TRIG) {
+        // make velocity higher if the player is holding L, to make it easier to reach higher platforms with the jump
+        m->vel[1] += 25.0f;
+    }
 
     play_mario_sound(m, SOUND_ACTION_TERRAIN_JUMP, 0);
     common_air_action_step(m, ACT_JUMP_LAND, MARIO_ANIM_SINGLE_JUMP,
