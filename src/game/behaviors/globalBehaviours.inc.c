@@ -6,51 +6,53 @@ extern const Vec4s wf_area_1_spline_RockPath[];
 #include "game/behavior_actions.h"
 #include "game/interaction.h"
 #include "game/segment2.h"
+#include "game/game_init.h"
 
-#define BOSS_WALK_SPEED 5.0f
 
-//
-// ----------------------
-// SHROOM BOSS (UNCHANGED)
-// ----------------------
-//
+extern struct MarioState *gMarioState;
 
-void bhvShroomBoss_loop(void) {
-    struct MarioState *m = gMarioState;
-    static s16 health = 3;
+// Forward declarations
+void bhv_rgb_light_loop(void);
+void bhv_point_light_loop(void);
 
-    f32 squash = 1.0f;
+// Global RGB lighting
+extern u8 gRGBLightActive;
+extern u8 gRGBLightR;
+extern u8 gRGBLightG;
+extern u8 gRGBLightB;
 
-    f32 dx = m->pos[0] - o->oPosX;
-    f32 dz = m->pos[2] - o->oPosZ;
-    o->oMoveAngleYaw = atan2s(dz, dx);
+#define MAX_RGB_LIGHTS 4
 
-    o->oPosX += BOSS_WALK_SPEED * sins(o->oMoveAngleYaw);
-    o->oPosZ += BOSS_WALK_SPEED * coss(o->oMoveAngleYaw);
+typedef struct {
+    u8 r, g, b;
+    s8 dir[3];
+    Vec3f pos;
+} RGBLightData;
 
-    if (cur_obj_is_mario_on_platform()) {
-        if (m->vel[1] < 55.0f) m->vel[1] = 55.0f;
-        set_mario_action(m, ACT_TRIPLE_JUMP, 0);
+extern RGBLightData gRGBLights[MAX_RGB_LIGHTS];
+extern u8 gRGBLightCount;
 
-        if (o->oTimer % 10 == 0) health--;
+extern u32 gLastRGBLightTimer;
 
-        squash = 0.8f;
-    }
+// Point light system
+#define MAX_POINT_LIGHTS 4
 
-    squash += (1.0f - squash) * 0.2f;
-    cur_obj_scale(squash);
+typedef struct {
+    u8 r, g, b;
+    Vec3f pos;
+    f32 radius;
+} PointLightData;
 
-    if (health <= 0) {
-        obj_mark_for_deletion(o);
-        spawn_default_star(o->oPosX, o->oPosY + 200.0f, o->oPosZ);
-    }
-}
+extern PointLightData gPointLights[MAX_POINT_LIGHTS];
+extern u8 gPointLightCount;
+extern u32 gLastPointLightTimer;
+extern f32 gPointLightInfluence;
+extern u8 gLensFlareLightActive;
+extern u8 gLensFlareLightR;
+extern u8 gLensFlareLightG;
+extern u8 gLensFlareLightB;
+extern Vec3f gLensFlareLightPos;
 
-//
-// ----------------------
-// MOVING PLATFORM (UNCHANGED)
-// ----------------------
-//
 
 void bhvMovingPlatform_loop(void) {
     s32 height = ((o->oBehParams >> 16) & 0xFF) * 10;
@@ -69,12 +71,6 @@ void bhvMovingPlatform_loop(void) {
 
     load_object_collision_model();
 }
-
-//
-// ----------------------
-// SILVER STAR — EXACT RED COIN LOGIC
-// ----------------------
-//
 
 u8 gSilverStarTotal = 0;
 u8 gSilverStarCount = 0;
@@ -114,49 +110,154 @@ void bhv_silver_star_loop(void) {
     }
 }
 
-
-// Penguin Boss 
-enum PenguinBossStates {
-    PENGUIN_BOSS_STATE_TALK = 0,
-    PENGUIN_BOSS_STATE_START_BOSS = 1,
-};
-
-#define PENGUIN_BOSS_ACTION_FIGHT 1
-
-
-void bhv_penguin_boss_message_init(void) {
-    // Dialog ID stored in the 2nd behavior param byte
-    o->oBehParams2ndByte = GET_BPARAM1(o->oBehParams);
-
-    o->oInteractType = INTERACT_TEXT;
-    o->oAction = PENGUIN_BOSS_STATE_TALK;
-    o->oIntangibleTimer = 0;
-    o->oSubAction = FALSE;
-
-    cur_obj_become_tangible();
-
-}
-
-
-void bhv_penguin_boss_message_loop(void) {
+void bhv_bobomb_star_loop(void) {
     switch (o->oAction) {
+        // ACTION 0: Spawn 5 Bob-ombs in a circle
+        case 0:
+            if (o->oTimer == 0) {
+                f32 radius = 300.0f;
+                s16 angles[5];
 
-        case PENGUIN_BOSS_STATE_TALK:
-            if (cur_obj_can_mario_activate_textbox_2(300.0f, 150.0f)) {
+                for (s32 i = 0; i < 5; i++) {
+                    s16 angle;
+                    s32 valid;
+                    s32 attempts = 0;
 
-                if (cur_obj_update_dialog_with_cutscene(
-                        MARIO_DIALOG_LOOK_UP,
-                        DIALOG_FLAG_TEXT_DEFAULT,
-                        CUTSCENE_DIALOG,
-                        DIALOG_017)) {
+                    // Pick spaced angles to prevent overlapping
+                    do {
+                        valid = TRUE;
+                        angle = random_u16();
+                        for (s32 j = 0; j < i; j++) {
+                            u16 diff = (u16)(angle - angles[j]);
+                            if (diff > 0x8000) diff = 0x10000 - diff;
+                            if (diff < 0x2000) valid = FALSE;
+                        }
+                        attempts++;
+                    } while (!valid && attempts < 20);
 
-                    o->oAction = PENGUIN_BOSS_STATE_START_BOSS;
+                    angles[i] = angle;
+
+                    // Spawn Bob-omb
+                    struct Object *bobomb = spawn_object(o, MODEL_BLACK_BOBOMB, bhvBobomb);
+                    bobomb->oPosX = o->oPosX + sins(angle) * radius;
+                    bobomb->oPosY = o->oPosY;
+                    bobomb->oPosZ = o->oPosZ + coss(angle) * radius;
+
+                    bobomb->oHomeX = bobomb->oPosX;
+                    bobomb->oHomeY = bobomb->oPosY;
+                    bobomb->oHomeZ = bobomb->oPosZ;
+                    bobomb->oMoveAngleYaw = angle;
+
+                    // Link the Bob-omb to this spawner
+                    bobomb->parentObj = o;
                 }
             }
-            break;
+}
+}
 
-        case PENGUIN_BOSS_STATE_START_BOSS:
-            o->oAction = PENGUIN_BOSS_ACTION_FIGHT;
-            break;
+void bhv_rgb_light_loop(void) {
+    // Reset light list once per frame
+    if (gGlobalTimer != gLastRGBLightTimer) {
+        gRGBLightCount = 0;
+        gRGBLightActive = 0;
+        gLensFlareLightActive = FALSE;
+        gLastRGBLightTimer = gGlobalTimer;
     }
+
+    // Stop if max lights already reached
+    if (gRGBLightCount >= MAX_RGB_LIGHTS) {
+        return;
+    }
+
+    // Extract RGB from behavior parameter
+    // Supports both 0x00RRGGBB and 0xRRGGBB00 encodings
+    u32 p = (u32)o->oBehParams;
+    u8 r;
+    u8 g;
+    u8 b;
+
+    if ((p & 0xFF) == 0 && ((p >> 8) & 0xFFFFFF) != 0) {
+        r = (p >> 24) & 0xFF;
+        g = (p >> 16) & 0xFF;
+        b = (p >> 8) & 0xFF;
+    } else {
+        r = (p >> 16) & 0xFF;
+        g = (p >> 8) & 0xFF;
+        b = (p >> 0) & 0xFF;
+    }
+
+    // Store color
+    gRGBLights[gRGBLightCount].r = r;
+    gRGBLights[gRGBLightCount].g = g;
+    gRGBLights[gRGBLightCount].b = b;
+    gRGBLightR = r;
+    gRGBLightG = g;
+    gRGBLightB = b;
+    gRGBLights[gRGBLightCount].pos[0] = o->oPosX;
+    gRGBLights[gRGBLightCount].pos[1] = o->oPosY;
+    gRGBLights[gRGBLightCount].pos[2] = o->oPosZ;
+    gLensFlareLightPos[0] = o->oPosX;
+    gLensFlareLightPos[1] = o->oPosY;
+    gLensFlareLightPos[2] = o->oPosZ;
+    gLensFlareLightR = r;
+    gLensFlareLightG = g;
+    gLensFlareLightB = b;
+    gLensFlareLightActive = TRUE;
+
+    // Use light object rotation as directional vector
+    s16 yaw = o->oFaceAngleYaw;
+    s16 pitch = o->oFaceAnglePitch;
+    gRGBLights[gRGBLightCount].dir[0] = (s8)(sins(yaw) * coss(pitch) * 127.0f);
+    gRGBLights[gRGBLightCount].dir[1] = (s8)(sins(pitch) * 127.0f);
+    gRGBLights[gRGBLightCount].dir[2] = (s8)(coss(yaw) * coss(pitch) * 127.0f);
+
+    // Add light
+    gRGBLightCount++;
+    gRGBLightActive = 1;
+}
+
+void bhv_point_light_loop(void) {
+    // Reset point light list once per frame
+    if (gGlobalTimer != gLastPointLightTimer) {
+        gPointLightCount = 0;
+        gLastPointLightTimer = gGlobalTimer;
+    }
+
+    // Stop if max lights already reached
+    if (gPointLightCount >= MAX_POINT_LIGHTS) {
+        return;
+    }
+
+    // Extract RGB and radius from behavior parameter
+    // Format: 0xRRGGBBRR where low byte is radius
+    // Supports RGB in high 24 bits, radius in low 8 bits
+    u32 p = (u32)o->oBehParams;
+    u8 r = (p >> 24) & 0xFF;
+    u8 g = (p >> 16) & 0xFF;
+    u8 b = (p >> 8) & 0xFF;
+    u8 radiusParam = p & 0xFF;
+
+    // Extract radius (0-255 range, scale to 0-5100)
+    f32 radius = (f32)radiusParam * 20.0f;
+
+    // Store point light data
+    gPointLights[gPointLightCount].r = r;
+    gPointLights[gPointLightCount].g = g;
+    gPointLights[gPointLightCount].b = b;
+    gPointLights[gPointLightCount].pos[0] = o->oPosX;
+    gPointLights[gPointLightCount].pos[1] = o->oPosY;
+    gPointLights[gPointLightCount].pos[2] = o->oPosZ;
+    gPointLights[gPointLightCount].radius = radius;
+
+    if (!gLensFlareLightActive) {
+        gLensFlareLightPos[0] = o->oPosX;
+        gLensFlareLightPos[1] = o->oPosY;
+        gLensFlareLightPos[2] = o->oPosZ;
+        gLensFlareLightR = r;
+        gLensFlareLightG = g;
+        gLensFlareLightB = b;
+        gLensFlareLightActive = TRUE;
+    }
+
+    gPointLightCount++;
 }

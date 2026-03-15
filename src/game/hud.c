@@ -9,12 +9,14 @@
 #include "print.h"
 #include "ingame_menu.h"
 #include "hud.h"
+#include "level_geo.h"
 #include "segment2.h"
 #include "area.h"
 #include "save_file.h"
 #include "print.h"
 #include "engine/surface_load.h"
 #include "engine/math_util.h"
+#include "rendering_graph_node.h"
 #include "puppycam2.h"
 #include "puppyprint.h"
 
@@ -112,6 +114,228 @@ s32 sBreathMeterVisibleTimer = 0;
 #endif
 
 static struct CameraHUD sCameraHUD = { CAM_STATUS_NONE };
+
+#define HUD_LENS_FLARE_MARGIN 1.0f
+#define HUD_LENS_FLARE_TEX_SIZE 64
+#define HUD_LENS_FLARE_HALF_TEX_WIDTH 32
+#define HUD_LENS_FLARE_TEX_HEIGHT 64
+
+static f32 hud_clampf(f32 value, f32 min, f32 max) {
+    if (value < min) {
+        return min;
+    }
+
+    if (value > max) {
+        return max;
+    }
+
+    return value;
+}
+
+static s32 hud_normalize_vec3f(Vec3f v) {
+    f32 mag = sqrtf(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+
+    if (mag < 0.001f) {
+        return FALSE;
+    }
+
+    v[0] /= mag;
+    v[1] /= mag;
+    v[2] /= mag;
+    return TRUE;
+}
+
+static s32 world_pos_to_hud_coords(Vec3f worldPos, f32 *outX, f32 *outY, f32 *outDepth) {
+    Vec3f forward;
+    Vec3f right;
+    Vec3f up;
+    Vec3f toLight;
+    static const Vec3f worldUp = { 0.0f, 1.0f, 0.0f };
+    f32 cameraX;
+    f32 cameraY;
+    f32 cameraZ;
+    f32 halfFovHorizontal = gLensFlareHalfFovHorizontal;
+    f32 halfFovVertical = gLensFlareHalfFovVertical;
+
+    if (halfFovHorizontal <= 0.0f || halfFovVertical <= 0.0f) {
+        return FALSE;
+    }
+
+    vec3f_copy(forward, gSkyboxCameraFoc);
+    vec3f_sub(forward, gSkyboxCameraPos);
+    vec3f_copy(toLight, worldPos);
+    vec3f_sub(toLight, gSkyboxCameraPos);
+
+    if (!hud_normalize_vec3f(forward) || !hud_normalize_vec3f(toLight)) {
+        return FALSE;
+    }
+
+    vec3f_cross(right, worldUp, forward);
+    if (!hud_normalize_vec3f(right)) {
+        right[0] = 1.0f;
+        right[1] = 0.0f;
+        right[2] = 0.0f;
+    }
+
+    vec3f_cross(up, forward, right);
+    if (!hud_normalize_vec3f(up)) {
+        up[0] = 0.0f;
+        up[1] = 1.0f;
+        up[2] = 0.0f;
+    }
+
+    vec3f_copy(toLight, worldPos);
+    vec3f_sub(toLight, gSkyboxCameraPos);
+    cameraX = vec3f_dot(toLight, right);
+    cameraY = vec3f_dot(toLight, up);
+    cameraZ = vec3f_dot(toLight, forward);
+
+    if (cameraZ <= 1.0f) {
+        return FALSE;
+    }
+
+    *outX = SCREEN_CENTER_X + (cameraX / cameraZ / halfFovHorizontal) * SCREEN_CENTER_X;
+    *outY = SCREEN_CENTER_Y - (cameraY / cameraZ / halfFovVertical) * SCREEN_CENTER_Y;
+    *outDepth = cameraZ;
+
+    return TRUE;
+}
+
+static void render_hud_lens_flare_sprite(s32 x, s32 y, s32 size, u8 r, u8 g, u8 b, u8 a) {
+    Gfx *dl = gDisplayListHead;
+    s32 halfSize;
+    s32 left;
+    s32 top;
+    s32 right;
+    s32 bottom;
+    s32 step;
+
+    if (size <= 0 || a == 0) {
+        return;
+    }
+
+    halfSize = size / 2;
+    left = x - halfSize;
+    top = y - halfSize;
+    right = left + size;
+    bottom = top + size;
+    step = (HUD_LENS_FLARE_TEX_SIZE << 10) / size;
+
+    gDPPipeSync(dl++);
+    gDPSetCycleType(dl++, G_CYC_1CYCLE);
+    gDPSetTexturePersp(dl++, G_TP_NONE);
+    gDPSetAlphaCompare(dl++, G_AC_NONE);
+    gDPSetTextureFilter(dl++, G_TF_BILERP);
+    gDPSetRenderMode(dl++, G_RM_XLU_SURF, G_RM_XLU_SURF2);
+    gDPSetCombineMode(dl++, G_CC_MODULATEIA_PRIM, G_CC_MODULATEIA_PRIM);
+    gSPClearGeometryMode(dl++, G_LIGHTING);
+    gSPTexture(dl++, 0xFFFF, 0xFFFF, 0, G_TX_RENDERTILE, G_ON);
+    gDPSetPrimColor(dl++, 0, 0, r, g, b, a);
+    gDPLoadTextureBlock(dl++, texture_transition_circle_half, G_IM_FMT_IA, G_IM_SIZ_8b,
+                        HUD_LENS_FLARE_HALF_TEX_WIDTH, HUD_LENS_FLARE_TEX_HEIGHT, 0,
+                        G_TX_WRAP | G_TX_MIRROR, G_TX_CLAMP, 5, 6, G_TX_NOLOD, G_TX_NOLOD);
+    gSPTextureRectangle(dl++, left << 2, top << 2, right << 2, bottom << 2, G_TX_RENDERTILE,
+                        (-31) << 5, 0, step, step);
+    gSPDisplayList(dl++, dl_hud_img_end);
+
+    gDisplayListHead = dl;
+}
+
+static void render_hud_light_lens_flare(void) {
+    f32 screenX;
+    f32 screenY;
+    f32 depth;
+    f32 ndcX;
+    f32 ndcY;
+    f32 edgeFade;
+    f32 centerFade;
+    f32 pulse;
+    f32 centerVecX;
+    f32 centerVecY;
+    s32 alpha;
+    s32 mainSize;
+    static const f32 sGhostFactors[] = { -0.7f, -0.35f, 0.28f, 0.68f };
+    static const f32 sGhostSizes[] = { 0.24f, 0.14f, 0.19f, 0.12f };
+    static const f32 sGhostAlpha[] = { 0.28f, 0.16f, 0.20f, 0.12f };
+    static const u8 sGhostColors[][3] = {
+        { 255, 170, 120 },
+        { 140, 200, 255 },
+        { 255, 120, 190 },
+        { 180, 255, 210 },
+    };
+    Vec3f camForward;
+    Vec3f toLight;
+    f32 lookDot;
+
+    if (!gLensFlareLightActive) {
+        return;
+    }
+
+    vec3f_copy(camForward, gSkyboxCameraFoc);
+    vec3f_sub(camForward, gSkyboxCameraPos);
+    vec3f_copy(toLight, gLensFlareLightPos);
+    vec3f_sub(toLight, gSkyboxCameraPos);
+    if (!hud_normalize_vec3f(camForward) || !hud_normalize_vec3f(toLight)) {
+        return;
+    }
+
+    lookDot = vec3f_dot(camForward, toLight);
+    if (lookDot <= 0.35f) {
+        return;
+    }
+
+    if (!world_pos_to_hud_coords(gLensFlareLightPos, &screenX, &screenY, &depth)) {
+        return;
+    }
+
+    ndcX = (screenX - SCREEN_CENTER_X) / SCREEN_CENTER_X;
+    ndcY = (screenY - SCREEN_CENTER_Y) / SCREEN_CENTER_Y;
+
+    if (absf(ndcX) > 1.0f + HUD_LENS_FLARE_MARGIN || absf(ndcY) > 1.0f + HUD_LENS_FLARE_MARGIN) {
+        return;
+    }
+
+    edgeFade = 1.0f - hud_clampf(MAX(absf(ndcX), absf(ndcY)), 0.0f, 1.0f);
+    centerFade = 1.0f - hud_clampf(sqrtf(ndcX * ndcX + ndcY * ndcY), 0.0f, 1.0f);
+    pulse = 0.9f + 0.1f * sins((s16)(gGlobalTimer * 0x500));
+    alpha = (s32)(255.0f * gLensFlareLightVisibility
+                * hud_clampf((lookDot - 0.35f) / 0.65f, 0.0f, 1.0f)
+                * (0.85f + centerFade * 0.35f) * pulse * (0.70f + edgeFade * 0.35f));
+
+    if (alpha <= 12) {
+        return;
+    }
+
+    centerVecX = screenX - SCREEN_CENTER_X;
+    centerVecY = screenY - SCREEN_CENTER_Y;
+    mainSize = 72 + (s32)(82.0f * centerFade);
+
+    render_hud_lens_flare_sprite((s32)screenX, (s32)screenY, mainSize + 72,
+                                 gLensFlareLightR, gLensFlareLightG, gLensFlareLightB,
+                                 (u8)MIN((s32)(alpha * 0.40f), 255));
+    render_hud_lens_flare_sprite((s32)screenX, (s32)screenY, mainSize + 28,
+                                 (u8)((gLensFlareLightR + 255) / 2),
+                                 (u8)((gLensFlareLightG + 255) / 2),
+                                 (u8)((gLensFlareLightB + 255) / 2),
+                                 (u8)MIN((s32)(alpha * 0.32f), 255));
+    render_hud_lens_flare_sprite((s32)screenX, (s32)screenY, mainSize,
+                                 255, 245, 220, (u8)MIN((s32)(alpha * 0.52f), 255));
+    render_hud_lens_flare_sprite((s32)screenX, (s32)screenY, MAX(mainSize / 3, 14),
+                                 255, 255, 255, (u8)MIN((s32)(alpha * 0.34f), 255));
+
+    for (s32 i = 0; i < (s32)(sizeof(sGhostFactors) / sizeof(sGhostFactors[0])); i++) {
+        f32 ghostX = SCREEN_CENTER_X + centerVecX * sGhostFactors[i];
+        f32 ghostY = SCREEN_CENTER_Y + centerVecY * sGhostFactors[i];
+        s32 ghostSize = MAX((s32)(mainSize * sGhostSizes[i]), 10);
+        s32 ghostAlpha = (s32)(alpha * sGhostAlpha[i]);
+
+        render_hud_lens_flare_sprite((s32)ghostX, (s32)ghostY, ghostSize,
+                                     sGhostColors[i][0],
+                                     sGhostColors[i][1],
+                                     sGhostColors[i][2],
+                                     (u8)ghostAlpha);
+    }
+}
 
 /**
  * Renders a rgba16 16x16 glyph texture from a table list.
@@ -542,6 +766,7 @@ void render_letterbox(void);
 
 void render_hud(void) {
     s16 hudDisplayFlags = gHudDisplay.flags;
+    s32 shouldRenderOverlay = (hudDisplayFlags != HUD_DISPLAY_NONE) || gLensFlareLightActive;
     update_letterbox();
     if (hudDisplayFlags == HUD_DISPLAY_NONE) {
         sPowerMeterHUD.animation = POWER_METER_HIDDEN;
@@ -552,7 +777,9 @@ void render_hud(void) {
         sBreathMeterStoredValue = 8;
         sBreathMeterVisibleTimer = 0;
 #endif
-    } else {
+    }
+
+    if (shouldRenderOverlay) {
 #ifdef VERSION_EU
         // basically create_dl_ortho_matrix but guOrtho screen width is different
         Mtx *mtx = alloc_display_list(sizeof(*mtx));
@@ -570,7 +797,7 @@ void render_hud(void) {
         create_dl_ortho_matrix();
 #endif
 
-        if (gCurrentArea != NULL && gCurrentArea->camera->mode == CAMERA_MODE_INSIDE_CANNON) {
+    if (hudDisplayFlags != HUD_DISPLAY_NONE && gCurrentArea != NULL && gCurrentArea->camera->mode == CAMERA_MODE_INSIDE_CANNON) {
             render_hud_cannon_reticle();
         }
 
@@ -610,6 +837,8 @@ void render_hud(void) {
         if (hudDisplayFlags & HUD_DISPLAY_FLAG_TIMER) {
             render_hud_timer();
         }
+
+        render_hud_light_lens_flare();
 
 #ifdef VANILLA_STYLE_CUSTOM_DEBUG
         //if (gCustomDebugMode) {

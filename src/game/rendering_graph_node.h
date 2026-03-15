@@ -11,9 +11,19 @@ extern struct GraphNodePerspective *gCurGraphNodeCamFrustum;
 extern struct GraphNodeCamera      *gCurGraphNodeCamera;
 extern struct GraphNodeObject      *gCurGraphNodeObject;
 extern struct GraphNodeHeldObject  *gCurGraphNodeHeldObject;
+extern Mat4 gCameraTransform;
+extern f32 sAspectRatio;
 #define gCurGraphNodeObjectNode ((struct Object *)gCurGraphNodeObject)
 extern u16 gAreaUpdateCounter;
 extern Vec3f globalLightDirection;
+extern u8 gLensFlareLightActive;
+extern u8 gLensFlareLightR;
+extern u8 gLensFlareLightG;
+extern u8 gLensFlareLightB;
+extern Vec3f gLensFlareLightPos;
+extern f32 gLensFlareLightVisibility;
+extern f32 gLensFlareHalfFovHorizontal;
+extern f32 gLensFlareHalfFovVertical;
 
 #define GRAPH_ROOT_PERSP 0
 #define GRAPH_ROOT_ORTHO 1

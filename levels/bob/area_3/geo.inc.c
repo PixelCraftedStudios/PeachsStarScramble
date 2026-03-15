@@ -4,7 +4,7 @@ const GeoLayout bob_area_3_geo[] = {
 	GEO_NODE_START(),
 	GEO_OPEN_NODE(),
 		GEO_TRANSLATE_NODE_WITH_DL(LAYER_OPAQUE, 19, 0, -679, bob_dl_Circle_mesh_layer_1),
-		GEO_TRANSLATE_NODE_WITH_DL(LAYER_OPAQUE, 112, 432, -705, bob_dl_Cube_001_mesh_layer_1),
+		GEO_TRANSLATE_NODE_WITH_DL(LAYER_OPAQUE, 140, 320, -736, bob_dl_Cube_001_mesh_layer_1),
 		GEO_OPEN_NODE(),
 			GEO_DISPLAY_LIST(LAYER_OPAQUE, bob_dl_final_revert_mesh_layer_1_002),
 		GEO_CLOSE_NODE(),

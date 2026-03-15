@@ -2,6 +2,7 @@
 #include "levels/castle_grounds/header.h"
 #include "levels/wf/header.h"
 static struct CutsceneEvent sMHEvents[] = {
+
     {
         .type = CUTSCENE_EVENT_SPLINE,
         .spline = {
@@ -51,6 +52,7 @@ static struct CutsceneEvent sMHEvents[] = {
 };
 
 static struct CutsceneEvent sCourtyardEvents[] = {
+    
     {
         .type = CUTSCENE_EVENT_SPLINE,
         .spline = { castle_grounds_area_1_spline_Cutscene, castle_grounds_area_1_spline_Focus },
@@ -63,7 +65,6 @@ static struct CutsceneEvent sCourtyardEvents[] = {
     },
 };
 static struct CutsceneEvent sShellshockEvents[] = {
-
     {
         .type = CUTSCENE_EVENT_SPLINE,
         .spline = { wf_area_1_spline_cam, wf_area_1_spline_foc},

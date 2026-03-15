@@ -133,7 +133,32 @@ void bhv_goomba_init(void) {
 #endif
 #endif
 }
+void bhv_goomba_massive_init(void) {
+    o->oGoombaSize = o->oBehParams2ndByte & GOOMBA_BP_SIZE_MASK;
 
+    o->oGoombaScale = (sGoombaProperties[o->oGoombaSize].scale) * 5.0f;
+    o->oDeathSound = sGoombaProperties[o->oGoombaSize].deathSound;
+
+    obj_set_hitbox(o, &sGoombaHitbox);
+
+    o->oDrawingDistance = sGoombaProperties[o->oGoombaSize].drawDistance;
+    o->oDamageOrCoinValue = sGoombaProperties[o->oGoombaSize].damage;
+
+    o->oGravity = -8.0f / 3.0f * o->oGoombaScale;
+
+#ifdef FLOOMBAS
+    if (o->oIsFloomba) {
+        o->oAnimState += FLOOMBA_ANIM_STATE_EYES_OPEN;
+    }
+#ifdef INTRO_FLOOMBAS
+    if (o->oAction == FLOOMBA_ACT_STARTUP) {
+        o->oZoomPosZ = o->oPosZ;
+        o->oGoombaScale = 0.0f;
+        cur_obj_hide();
+    }
+#endif
+#endif
+}
 /**
  * Enter the jump action and set initial y velocity.
  */

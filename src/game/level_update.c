@@ -1353,7 +1353,7 @@ void ManageCutscenes(s16 initOrUpdate){
             StartCutscene(CUSTOM_CUTSCENE_MH);
             break;
         case LEVEL_WF:
-            StartCutscene(CUSTOM_CUTSCENE_SHELLSHOCK);
+            //StartCutscene(CUSTOM_CUTSCENE_SHELLSHOCK);
             break;
 
 
@@ -1439,6 +1439,7 @@ s32 lvl_set_current_level(UNUSED s16 initOrUpdate, s32 levelNum) {
     if (gCurrCourseNum > COURSE_STAGES_MAX || warpCheckpointActive) {
         return FALSE;
     }
+	if (gCurrLevelNum == LEVEL_THI) return 0;
 
     return !gDebugLevelSelect;
 }

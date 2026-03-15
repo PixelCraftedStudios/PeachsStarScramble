@@ -524,6 +524,11 @@ s32 act_triple_jump(struct MarioState *m) {
     /* Allow faster turning toward the analog stick while airborne in the triple jump. */
     if(m->actionArg == 1) {
         update_air_with_turn_fast(m);
+        m->actionTimer++;
+        if(m->actionTimer == 1) {
+            m->vel[1] += 25.0f;
+            m->particleFlags |= PARTICLE_VERTICAL_STAR;
+        }
     }
     
     common_air_action_step(m, ACT_TRIPLE_JUMP_LAND, MARIO_ANIM_TRIPLE_JUMP, 0);

@@ -5113,6 +5113,7 @@ const BehaviorScript bhvGoomba[] = {
 };
 
 
+
 const BehaviorScript bhvGoombaTripletSpawner[] = {
     BEGIN(OBJ_LIST_PUSHABLE),
     OR_INT(oFlags, (OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
@@ -6107,31 +6108,11 @@ const BehaviorScript bhvbouncePad[] = {
     END_LOOP(),
 };
 
-void bhvShroomBoss_loop(void);
+
 void bhvMovingPlatform_loop(void);
 void bhv_silver_star_init(void);
 void bhv_silver_star_loop(void);
-void bhvFallingRock_loop(void);
-void bhv_penguin_boss_message_init(void);
-void bhv_penguin_boss_message_loop(void);
 
-const BehaviorScript bhvShroomBoss[] = {
-    BEGIN(OBJ_LIST_SURFACE),
-    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_ANGLE_TO_MARIO
-                  | OBJ_FLAG_COMPUTE_DIST_TO_MARIO
-                  | OBJ_FLAG_SET_FACE_YAW_TO_MOVE_YAW
-                  | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
-
-    SET_FLOAT(oDrawingDistance, 20000),
-    LOAD_ANIMATIONS(oAnimations, shroomBoss_anims),
-    ANIMATE(SHROOMBOSS_ANIM_IDLE),
-    LOAD_COLLISION_DATA(shroomBoss_collision),
-    SET_HOME(),
-    BEGIN_LOOP(),
-        CALL_NATIVE(bhvShroomBoss_loop),
-        CALL_NATIVE(load_object_collision_model),
-    END_LOOP(),
-};
 const BehaviorScript bhvFirePlatform[] = {
     BEGIN(OBJ_LIST_SURFACE),
     OR_INT(oFlags, (OBJ_FLAG_COMPUTE_ANGLE_TO_MARIO
@@ -6170,37 +6151,44 @@ const BehaviorScript bhvSilverStar[] = {
     END_LOOP(),
 };
 
-const BehaviorScript bhvFallingRock[] = {
-    BEGIN(OBJ_LIST_SURFACE),
-    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
-    LOAD_COLLISION_DATA(FallingRock_collision),
-    SET_OBJ_PHYSICS(/*Wall hitbox radius*/ 50, /*Gravity*/ -400, /*Bounciness*/ 0, /*Drag strength*/ 1000, /*Friction*/ 1000, /*Buoyancy*/ 200, /*Unused*/ 0, 0),
-    SET_FLOAT(oDrawingDistance, 100000),
-    SET_FLOAT(oCollisionDistance, 1000),
+void bhv_bobomb_star_loop(void);
+void bhv_goomba_massive_init(void);
+void bhv_rgb_light_loop(void);
+void bhv_point_light_loop(void);
+
+const BehaviorScript bhvBobombStar[] = {
+    BEGIN(OBJ_LIST_LEVEL),
+    OR_INT(oFlags, OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE),
+    //CALL_NATIVE(bhv_bobomb_star_init),
     BEGIN_LOOP(),
-        //CALL_NATIVE(bhvFallingRock_loop),
-        CALL_NATIVE(load_object_collision_model),
+        CALL_NATIVE(bhv_bobomb_star_loop),
+    END_LOOP(),
+};
+const BehaviorScript bhvGoombaMassive[] = {
+    BEGIN(OBJ_LIST_PUSHABLE),
+    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_ANGLE_TO_MARIO | OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_SET_FACE_YAW_TO_MOVE_YAW | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+    DROP_TO_FLOOR(),
+    LOAD_ANIMATIONS(oAnimations, goomba_seg8_anims_0801DA4C),
+    SET_HOME(),
+    SET_OBJ_PHYSICS(/*Wall hitbox radius*/ 40, /*Gravity*/ -400, /*Bounciness*/ -50, /*Drag strength*/ 1000, /*Friction*/ 1000, /*Buoyancy*/ 0, /*Unused*/ 0, 0),
+    CALL_NATIVE(bhv_goomba_massive_init),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_goomba_update),
     END_LOOP(),
 };
 
-const BehaviorScript bhvPenguinBoss[] = {
-    BEGIN(OBJ_LIST_GENACTOR),
-
-    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_ANGLE_TO_MARIO |
-                    OBJ_FLAG_ACTIVE_FROM_AFAR |
-                    OBJ_FLAG_COMPUTE_DIST_TO_MARIO |
-                    OBJ_FLAG_SET_FACE_YAW_TO_MOVE_YAW |
-                    OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
-
-    // NO INTERACT TYPE
-    // NO HITBOX
-
-    DROP_TO_FLOOR(),
-    SET_HOME(),
-
-    CALL_NATIVE(bhv_penguin_boss_message_init),
-
+const BehaviorScript bhvRGBLight[] = {
+    BEGIN(OBJ_LIST_LEVEL),
+    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
     BEGIN_LOOP(),
-        CALL_NATIVE(bhv_penguin_boss_message_loop),
+        CALL_NATIVE(bhv_rgb_light_loop),
+    END_LOOP(),
+};
+
+const BehaviorScript bhvPointLight[] = {
+    BEGIN(OBJ_LIST_LEVEL),
+    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_point_light_loop),
     END_LOOP(),
 };

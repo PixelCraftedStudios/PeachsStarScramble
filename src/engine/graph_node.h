@@ -137,6 +137,8 @@ struct GraphNodePerspective {
 struct DisplayListNode {
     Mtx *transform;
     void *displayList;
+    Vec3f worldPos;
+    u8 useObjectPos;
     struct DisplayListNode *next;
 };
 

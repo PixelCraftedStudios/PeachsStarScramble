@@ -4,7 +4,7 @@ extern u8 NewPipe__76A02A69_c_pal_rgba16[];
 extern u8 NewPipe__6C0274DD_c_ci8[];
 extern u8 NewPipe__6C0274DD_c_pal_rgba16[];
 extern Vtx NewPipe_Pipe_ShapeIndexedFaceSet_47_ShapeIndexedFaceSet_001_mesh_layer_1_vtx_cull[8];
-extern Vtx NewPipe_Pipe_ShapeIndexedFaceSet_47_ShapeIndexedFaceSet_001_mesh_layer_1_vtx_0[169];
+extern Vtx NewPipe_Pipe_ShapeIndexedFaceSet_47_ShapeIndexedFaceSet_001_mesh_layer_1_vtx_0[131];
 extern Gfx NewPipe_Pipe_ShapeIndexedFaceSet_47_ShapeIndexedFaceSet_001_mesh_layer_1_tri_0[];
 extern Vtx NewPipe_Pipe_ShapeIndexedFaceSet_47_ShapeIndexedFaceSet_001_mesh_layer_1_vtx_1[38];
 extern Gfx NewPipe_Pipe_ShapeIndexedFaceSet_47_ShapeIndexedFaceSet_001_mesh_layer_1_tri_1[];

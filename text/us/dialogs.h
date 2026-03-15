@@ -52,12 +52,12 @@ Hey, you! It's dangerous\n\
 ahead, so listen up! Take\n\
 my advice.\n\
 \n\
-Cross the two\n\
-bridges ahead, then\n\
-watch for falling\n\
-water bombs.\n\
+The Bobombs and Goombas\n\
+are everywhere,\n\
+and fighting like mad!\n\
+Only a hero can survive!\n\
 The Big Bob-omb at the\n\
-top of the mountain is\n\
+top of the island is\n\
 very powerful--don't let\n\
 him grab you!\n\
 We're Bob-omb Buddies,\n\

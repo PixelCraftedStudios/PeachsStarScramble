@@ -545,12 +545,13 @@ extern const BehaviorScript bhvUnusedFakeStar[];
 extern const BehaviorScript bhvbouncingShroom[];
 extern const BehaviorScript bhvbouncePad[];
 
-extern const BehaviorScript bhvShroomBoss[];
 extern const BehaviorScript bhvFirePlatform[];
 extern const BehaviorScript bhvBreakableMHBox[];
 extern const BehaviorScript bhvSilverStar[];
-extern const BehaviorScript bhvFallingRock[];
-extern const BehaviorScript bhvPenguinBoss[];
+extern const BehaviorScript bhvBobombStar[];
+extern const BehaviorScript bhvGoombaMassive[];
+extern const BehaviorScript bhvRGBLight[];
+extern const BehaviorScript bhvPointLight[];
 /*CUSTOM BHV*/
 
 #endif // BEHAVIOR_DATA_H

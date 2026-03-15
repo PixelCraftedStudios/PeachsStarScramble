@@ -11,13 +11,7 @@
         ]
     },
     "instruments": {
-        "channel_1": {
-            "release_rate": 10,
-            "envelope": "envelope",
-            "sound": "happyveg"
-        }
     },
     "instrument_list": [
-        "channel_1"
     ]
 }

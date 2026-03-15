@@ -369,6 +369,10 @@ void geo_append_display_list(void *displayList, s32 layer) {
 
     n->transform   = gMatStackFixed[gMatStackIndex];
     n->displayList = displayList;
+    n->worldPos[0] = gMatStack[gMatStackIndex][3][0];
+    n->worldPos[1] = gMatStack[gMatStackIndex][3][1];
+    n->worldPos[2] = gMatStack[gMatStackIndex][3][2];
+    n->useObjectPos = TRUE;
     n->next        = NULL;
 
     struct DisplayListNode **head = &gCurGraphNodeMasterList->listHeads[layer];
@@ -463,9 +467,13 @@ void geo_process_perspective(struct GraphNodePerspective *node) {
         // We need to account for aspect ratio changes by multiplying by the widescreen horizontal stretch 
         // (normally 1.775).
         node->halfFovHorizontal = tans(vHalfFov * sAspectRatio);
+        gLensFlareHalfFovHorizontal = node->halfFovHorizontal;
 
 #ifdef VERTICAL_CULLING
         node->halfFovVertical = tans(vHalfFov);
+        gLensFlareHalfFovVertical = node->halfFovVertical;
+    #else
+        gLensFlareHalfFovVertical = node->halfFovHorizontal / sAspectRatio;
 #endif
 
         // With low fovs, coordinate overflow can occur more easily. This slightly reduces precision only while zoomed in.
@@ -531,31 +539,362 @@ void geo_process_switch(struct GraphNodeSwitchCase *node) {
 
 Mat4 gCameraTransform;
 
+#define WORLDSPACE_LIGHTING 1
+
 Lights1 defaultLight = gdSPDefLights1(
-    0x3F, 0x3F, 0x3F, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00
+    0x40, 0x40, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 );
 
 Vec3f globalLightDirection = { 0x28, 0x28, 0x28 };
 
-void setup_global_light() {
-    Lights1* curLight = (Lights1*)alloc_display_list(sizeof(Lights1));
-    bcopy(&defaultLight, curLight, sizeof(Lights1));
+// RGB light system
+u8 gRGBLightActive = 0;
+u8 gRGBLightR = 0xFF;
+u8 gRGBLightG = 0xFF;
+u8 gRGBLightB = 0xFF;
 
-#ifdef WORLDSPACE_LIGHTING
-    curLight->l->l.dir[0] = (s8)(globalLightDirection[0]);
-    curLight->l->l.dir[1] = (s8)(globalLightDirection[1]);
-    curLight->l->l.dir[2] = (s8)(globalLightDirection[2]);
-#else
-    Vec3f transformedLightDirection;
-    linear_mtxf_transpose_mul_vec3f(gCameraTransform, transformedLightDirection, globalLightDirection);
-    curLight->l->l.dir[0] = (s8)(transformedLightDirection[0]);
-    curLight->l->l.dir[1] = (s8)(transformedLightDirection[1]);
-    curLight->l->l.dir[2] = (s8)(transformedLightDirection[2]);
-#endif
+#define MAX_RGB_LIGHTS 4
+
+typedef struct {
+    u8 r, g, b;
+    s8 dir[3];
+    Vec3f pos;
+} RGBLightData;
+
+RGBLightData gRGBLights[MAX_RGB_LIGHTS];
+u8 gRGBLightCount = 0;
+u32 gLastRGBLightTimer = 0;
+
+// Point light system for radius-based lighting
+#define MAX_POINT_LIGHTS 4
+
+typedef struct {
+    u8 r, g, b;
+    Vec3f pos;
+    f32 radius;
+} PointLightData;
+
+PointLightData gPointLights[MAX_POINT_LIGHTS];
+u8 gPointLightCount = 0;
+u32 gLastPointLightTimer = 0;
+f32 gPointLightInfluence = 1.0f;  // How much point lights affect ambient
+
+u8 gLensFlareLightActive = FALSE;
+u8 gLensFlareLightR = 0xFF;
+u8 gLensFlareLightG = 0xFF;
+u8 gLensFlareLightB = 0xFF;
+Vec3f gLensFlareLightPos = { 0.0f, 0.0f, 0.0f };
+f32 gLensFlareLightVisibility = 1.0f;
+f32 gLensFlareHalfFovHorizontal = 1.0f;
+f32 gLensFlareHalfFovVertical = 1.0f;
+
+static s32 find_closest_rgb_light_to_mario(void) {
+    if (!gMarioState || gRGBLightCount == 0) {
+        return -1;
+    }
+
+    s32 closestIndex = 0;
+    f32 bestDistSq = 0.0f;
+
+    for (s32 i = 0; i < gRGBLightCount; i++) {
+        f32 dx = gRGBLights[i].pos[0] - gMarioState->pos[0];
+        f32 dy = gRGBLights[i].pos[1] - gMarioState->pos[1];
+        f32 dz = gRGBLights[i].pos[2] - gMarioState->pos[2];
+        f32 distSq = dx * dx + dy * dy + dz * dz;
+
+        if (i == 0 || distSq < bestDistSq) {
+            bestDistSq = distSq;
+            closestIndex = i;
+        }
+    }
+
+    return closestIndex;
+}
+
+void setup_global_light(void) {
+    static u8 sSmoothCol[3] = { 255, 255, 255 };
+    static s8 sSmoothDir[3] = { 40, 40, 40 };
+    static u8 sSmoothInit = FALSE;
+    static s32 sSelectedLight = -1;
+    s32 flareLightIndex = -1;
+    s32 flarePointLightIndex = -1;
+    s32 dominantPointLightIndex = -1;
+    s32 activeLightIndex = -1;
+    f32 dominantPointLightStrength = 0.0f;
+    f32 pointDirectWeight = 0.0f;
+    u8 hasTargetLight = FALSE;
+    u8 targetCol[3] = { 255, 255, 255 };
+    s8 targetDir[3] = { 40, 40, 40 };
+
+    Lights1 *curLight = (Lights1 *)alloc_display_list(sizeof(Lights1));
+
+    if (!curLight) {
+        return;
+    }
+
+    if (gRGBLightActive) {
+        if (gRGBLightCount > 0) {
+            activeLightIndex = (gMarioState && gRGBLightCount > 1) ? find_closest_rgb_light_to_mario() : 0;
+            if (activeLightIndex < 0) {
+                activeLightIndex = 0;
+            }
+
+            flareLightIndex = activeLightIndex;
+            targetCol[0] = gRGBLights[activeLightIndex].r;
+            targetCol[1] = gRGBLights[activeLightIndex].g;
+            targetCol[2] = gRGBLights[activeLightIndex].b;
+
+            if (gMarioState) {
+                f32 dx = gRGBLights[activeLightIndex].pos[0] - gMarioState->pos[0];
+                f32 dy = gRGBLights[activeLightIndex].pos[1] - gMarioState->pos[1];
+                f32 dz = gRGBLights[activeLightIndex].pos[2] - gMarioState->pos[2];
+                f32 mag = sqrtf(dx * dx + dy * dy + dz * dz);
+
+                if (mag > 0.001f) {
+                    dx /= mag;
+                    dy /= mag;
+                    dz /= mag;
+                    targetDir[0] = (s8)(dx * 127.0f);
+                    targetDir[1] = (s8)(dy * 127.0f);
+                    targetDir[2] = (s8)(dz * 127.0f);
+                }
+            }
+        } else {
+            targetCol[0] = gRGBLightR;
+            targetCol[1] = gRGBLightG;
+            targetCol[2] = gRGBLightB;
+        }
+
+        hasTargetLight = TRUE;
+    } else if (gRGBLightCount > 0 && gMarioState) {
+        s32 closest = find_closest_rgb_light_to_mario();
+
+        if (sSelectedLight < 0 || sSelectedLight >= gRGBLightCount) {
+            sSelectedLight = closest;
+        } else if (closest >= 0 && closest != sSelectedLight) {
+            f32 dxSel = gRGBLights[sSelectedLight].pos[0] - gMarioState->pos[0];
+            f32 dySel = gRGBLights[sSelectedLight].pos[1] - gMarioState->pos[1];
+            f32 dzSel = gRGBLights[sSelectedLight].pos[2] - gMarioState->pos[2];
+            f32 distSelSq = dxSel * dxSel + dySel * dySel + dzSel * dzSel;
+
+            f32 dxNew = gRGBLights[closest].pos[0] - gMarioState->pos[0];
+            f32 dyNew = gRGBLights[closest].pos[1] - gMarioState->pos[1];
+            f32 dzNew = gRGBLights[closest].pos[2] - gMarioState->pos[2];
+            f32 distNewSq = dxNew * dxNew + dyNew * dyNew + dzNew * dzNew;
+
+            if (distNewSq < distSelSq * 0.85f) {
+                sSelectedLight = closest;
+            }
+        }
+
+        if (sSelectedLight >= 0) {
+            f32 dx = gRGBLights[sSelectedLight].pos[0] - gMarioState->pos[0];
+            f32 dy = gRGBLights[sSelectedLight].pos[1] - gMarioState->pos[1];
+            f32 dz = gRGBLights[sSelectedLight].pos[2] - gMarioState->pos[2];
+            f32 mag = sqrtf(dx * dx + dy * dy + dz * dz);
+
+            flareLightIndex = sSelectedLight;
+
+            targetCol[0] = gRGBLights[sSelectedLight].r;
+            targetCol[1] = gRGBLights[sSelectedLight].g;
+            targetCol[2] = gRGBLights[sSelectedLight].b;
+            hasTargetLight = TRUE;
+
+            if (mag > 0.001f) {
+                dx /= mag;
+                dy /= mag;
+                dz /= mag;
+                targetDir[0] = (s8)(dx * 127.0f);
+                targetDir[1] = (s8)(dy * 127.0f);
+                targetDir[2] = (s8)(dz * 127.0f);
+            }
+        }
+    } else {
+        sSelectedLight = -1;
+    }
+
+    // Process point lights - they blend their color into ambient light based on distance falloff
+    s32 pointLightAccumCol[3] = { 0, 0, 0 };
+    u8 pointLightBlendCol[3] = { 0, 0, 0 };
+    f32 totalPointLightInfluence = 0.0f;
+
+    if (gPointLightCount > 0) {
+        if (flarePointLightIndex < 0) {
+            flarePointLightIndex = 0;
+        }
+    }
+
+    if (gMarioState && gPointLightCount > 0) {
+        f32 bestPointInfluence = 0.0f;
+
+        for (s32 i = 0; i < gPointLightCount; i++) {
+            f32 dx = gPointLights[i].pos[0] - gMarioState->pos[0];
+            f32 dy = gPointLights[i].pos[1] - gMarioState->pos[1];
+            f32 dz = gPointLights[i].pos[2] - gMarioState->pos[2];
+            f32 dist = sqrtf(dx * dx + dy * dy + dz * dz);
+
+            if (dist < gPointLights[i].radius) {
+                // Calculate falloff: 1.0 at center, 0.0 at radius edge
+                f32 falloff = 1.0f - (dist / gPointLights[i].radius);
+                falloff = falloff * falloff;  // Smooth falloff curve
+
+                // Accumulate influence
+                pointLightAccumCol[0] += (s32)(gPointLights[i].r * falloff);
+                pointLightAccumCol[1] += (s32)(gPointLights[i].g * falloff);
+                pointLightAccumCol[2] += (s32)(gPointLights[i].b * falloff);
+                totalPointLightInfluence += falloff;
+
+                if (falloff > bestPointInfluence) {
+                    bestPointInfluence = falloff;
+                    flarePointLightIndex = i;
+                    dominantPointLightIndex = i;
+                    dominantPointLightStrength = falloff;
+                }
+            }
+        }
+
+        // Normalize accumulated color by total influence
+        if (totalPointLightInfluence > 0.0f) {
+            if (totalPointLightInfluence > 1.0f) totalPointLightInfluence = 1.0f;
+            pointLightBlendCol[0] = (u8)MIN(pointLightAccumCol[0] / MAX(totalPointLightInfluence, 0.001f), 255.0f);
+            pointLightBlendCol[1] = (u8)MIN(pointLightAccumCol[1] / MAX(totalPointLightInfluence, 0.001f), 255.0f);
+            pointLightBlendCol[2] = (u8)MIN(pointLightAccumCol[2] / MAX(totalPointLightInfluence, 0.001f), 255.0f);
+
+            if (!hasTargetLight && dominantPointLightIndex >= 0) {
+                f32 dx = gPointLights[dominantPointLightIndex].pos[0] - gMarioState->pos[0];
+                f32 dy = gPointLights[dominantPointLightIndex].pos[1] - gMarioState->pos[1];
+                f32 dz = gPointLights[dominantPointLightIndex].pos[2] - gMarioState->pos[2];
+                f32 mag = sqrtf(dx * dx + dy * dy + dz * dz);
+
+                targetCol[0] = pointLightBlendCol[0];
+                targetCol[1] = pointLightBlendCol[1];
+                targetCol[2] = pointLightBlendCol[2];
+                hasTargetLight = TRUE;
+
+                if (mag > 0.001f) {
+                    dx /= mag;
+                    dy /= mag;
+                    dz /= mag;
+                    targetDir[0] = (s8)(dx * 127.0f);
+                    targetDir[1] = (s8)(dy * 127.0f);
+                    targetDir[2] = (s8)(dz * 127.0f);
+                }
+            }
+        }
+    }
+
+    if (dominantPointLightIndex >= 0 && gMarioState) {
+        f32 dx = gPointLights[dominantPointLightIndex].pos[0] - gMarioState->pos[0];
+        f32 dy = gPointLights[dominantPointLightIndex].pos[1] - gMarioState->pos[1];
+        f32 dz = gPointLights[dominantPointLightIndex].pos[2] - gMarioState->pos[2];
+        f32 mag = sqrtf(dx * dx + dy * dy + dz * dz);
+        f32 pointDirectScale = 0.45f + dominantPointLightStrength * 0.85f;
+        pointDirectWeight = MIN(0.75f, 0.25f + dominantPointLightStrength * 0.75f);
+
+        if (mag > 0.001f) {
+            s8 pointDir[3];
+            u8 pointCol[3];
+
+            dx /= mag;
+            dy /= mag;
+            dz /= mag;
+            pointDir[0] = (s8)(dx * 127.0f);
+            pointDir[1] = (s8)(dy * 127.0f);
+            pointDir[2] = (s8)(dz * 127.0f);
+
+            pointCol[0] = (u8)MIN((f32)gPointLights[dominantPointLightIndex].r * pointDirectScale, 255.0f);
+            pointCol[1] = (u8)MIN((f32)gPointLights[dominantPointLightIndex].g * pointDirectScale, 255.0f);
+            pointCol[2] = (u8)MIN((f32)gPointLights[dominantPointLightIndex].b * pointDirectScale, 255.0f);
+
+            if (hasTargetLight) {
+                targetCol[0] = (u8)MIN((f32)targetCol[0] * (1.0f - pointDirectWeight) + (f32)pointCol[0] * pointDirectWeight, 255.0f);
+                targetCol[1] = (u8)MIN((f32)targetCol[1] * (1.0f - pointDirectWeight) + (f32)pointCol[1] * pointDirectWeight, 255.0f);
+                targetCol[2] = (u8)MIN((f32)targetCol[2] * (1.0f - pointDirectWeight) + (f32)pointCol[2] * pointDirectWeight, 255.0f);
+                targetDir[0] = (s8)((f32)targetDir[0] * (1.0f - pointDirectWeight) + (f32)pointDir[0] * pointDirectWeight);
+                targetDir[1] = (s8)((f32)targetDir[1] * (1.0f - pointDirectWeight) + (f32)pointDir[1] * pointDirectWeight);
+                targetDir[2] = (s8)((f32)targetDir[2] * (1.0f - pointDirectWeight) + (f32)pointDir[2] * pointDirectWeight);
+            } else {
+                targetCol[0] = pointCol[0];
+                targetCol[1] = pointCol[1];
+                targetCol[2] = pointCol[2];
+                targetDir[0] = pointDir[0];
+                targetDir[1] = pointDir[1];
+                targetDir[2] = pointDir[2];
+                hasTargetLight = TRUE;
+            }
+        }
+    }
+
+    if (flareLightIndex >= 0 && flareLightIndex < gRGBLightCount) {
+        gLensFlareLightActive = TRUE;
+        gLensFlareLightR = gRGBLights[flareLightIndex].r;
+        gLensFlareLightG = gRGBLights[flareLightIndex].g;
+        gLensFlareLightB = gRGBLights[flareLightIndex].b;
+        vec3f_copy(gLensFlareLightPos, gRGBLights[flareLightIndex].pos);
+        gLensFlareLightVisibility = 1.0f;
+    } else if (flarePointLightIndex >= 0 && flarePointLightIndex < gPointLightCount) {
+        gLensFlareLightActive = TRUE;
+        gLensFlareLightR = gPointLights[flarePointLightIndex].r;
+        gLensFlareLightG = gPointLights[flarePointLightIndex].g;
+        gLensFlareLightB = gPointLights[flarePointLightIndex].b;
+        vec3f_copy(gLensFlareLightPos, gPointLights[flarePointLightIndex].pos);
+        gLensFlareLightVisibility = 1.0f;
+    } else if (gRGBLightCount == 0 && gPointLightCount == 0) {
+        gLensFlareLightActive = FALSE;
+        gLensFlareLightVisibility = 0.0f;
+    }
+
+    if (!sSmoothInit) {
+        sSmoothCol[0] = targetCol[0];
+        sSmoothCol[1] = targetCol[1];
+        sSmoothCol[2] = targetCol[2];
+        sSmoothDir[0] = targetDir[0];
+        sSmoothDir[1] = targetDir[1];
+        sSmoothDir[2] = targetDir[2];
+        sSmoothInit = TRUE;
+    } else {
+        for (s32 i = 0; i < 3; i++) {
+            sSmoothCol[i] = (u8)(((s32)sSmoothCol[i] * 7 + (s32)targetCol[i]) / 8);
+            sSmoothDir[i] = (s8)(((s32)sSmoothDir[i] * 15 + (s32)targetDir[i]) / 16);
+        }
+    }
+
+    // Apply point light influence to ambient
+    u8 ambientCol[3];
+    if (totalPointLightInfluence > 0.0f) {
+        // Blend with sunlight - do arithmetic in s32 to avoid overflow
+        s32 col0 = (hasTargetLight ? (s32)sSmoothCol[0] / 2 : 60) + (s32)(pointLightBlendCol[0] * totalPointLightInfluence * (gPointLightInfluence + 1.0f));
+        s32 col1 = (hasTargetLight ? (s32)sSmoothCol[1] / 2 : 60) + (s32)(pointLightBlendCol[1] * totalPointLightInfluence * (gPointLightInfluence + 1.0f));
+        s32 col2 = (hasTargetLight ? (s32)sSmoothCol[2] / 2 : 60) + (s32)(pointLightBlendCol[2] * totalPointLightInfluence * (gPointLightInfluence + 1.0f));
+        // Clamp to 0-255
+        ambientCol[0] = (col0 > 255) ? 255 : (col0 < 0) ? 0 : (u8)col0;
+        ambientCol[1] = (col1 > 255) ? 255 : (col1 < 0) ? 0 : (u8)col1;
+        ambientCol[2] = (col2 > 255) ? 255 : (col2 < 0) ? 0 : (u8)col2;
+    } else {
+        ambientCol[0] = hasTargetLight ? sSmoothCol[0] : 80;
+        ambientCol[1] = hasTargetLight ? sSmoothCol[1] : 80;
+        ambientCol[2] = hasTargetLight ? sSmoothCol[2] : 80;
+    }
+
+    curLight->l->l.col[0] = hasTargetLight ? sSmoothCol[0] : 255;
+    curLight->l->l.col[1] = hasTargetLight ? sSmoothCol[1] : 255;
+    curLight->l->l.col[2] = hasTargetLight ? sSmoothCol[2] : 255;
+    curLight->l->l.colc[0] = curLight->l->l.col[0];
+    curLight->l->l.colc[1] = curLight->l->l.col[1];
+    curLight->l->l.colc[2] = curLight->l->l.col[2];
+    curLight->l->l.dir[0] = sSmoothDir[0];
+    curLight->l->l.dir[1] = sSmoothDir[1];
+    curLight->l->l.dir[2] = sSmoothDir[2];
+
+    curLight->a.l.col[0] = ambientCol[0];
+    curLight->a.l.col[1] = ambientCol[1];
+    curLight->a.l.col[2] = ambientCol[2];
+    curLight->a.l.colc[0] = curLight->a.l.col[0];
+    curLight->a.l.colc[1] = curLight->a.l.col[1];
+    curLight->a.l.colc[2] = curLight->a.l.col[2];
 
     gSPSetLights1(gDisplayListHead++, (*curLight));
 }
-
 /**
  * Process a camera node.
  */
