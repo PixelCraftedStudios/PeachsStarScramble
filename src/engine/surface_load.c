@@ -11,6 +11,7 @@
 #include "surface_collision.h"
 #include "math_util.h"
 #include "game/mario.h"
+#include "game/camera.h"
 #include "game/object_list_processor.h"
 #include "surface_load.h"
 #include "game/puppyprint.h"
@@ -294,6 +295,8 @@ static s32 surface_has_force(s32 surfaceType) {
         case SURFACE_MOVING_QUICKSAND:
         case SURFACE_HORIZONTAL_WIND:
         case SURFACE_INSTANT_MOVING_QUICKSAND:
+        case SURFACE_GRIND_RAIL:
+        case SURFACE_CONVEYOR_SHORT_EDGE:
             hasForce = TRUE;
             break;
 
@@ -718,15 +721,27 @@ void load_object_collision_model(void) {
         }
     }
 
-    f32 marioDist = o->oDistanceToMario;
+    if (o->oFlags & OBJ_FLAG_DISABLE_RENDER_CULL) {
+        o->header.gfx.node.flags |= GRAPH_RENDER_ACTIVE;
+    } else {
+        f32 renderDist = o->oDistanceToMario;
 
-    // On an object's first frame, the distance is set to 19000.0f.
-    // If the distance hasn't been updated, update it now.
-    if (marioDist == 19000.0f) {
-        marioDist = dist_between_objects(o, gMarioObject);
+        // On an object's first frame, the distance is set to 19000.0f.
+        // If the distance hasn't been updated, update it now.
+        if (renderDist == 19000.0f) {
+            renderDist = dist_between_objects(o, gMarioObject);
+        }
+
+        if ((o->oFlags & OBJ_FLAG_CULL_BY_CAMERA_POS) && gCurrentArea != NULL && gCurrentArea->camera != NULL) {
+            f32 camDx = gCurrentArea->camera->pos[0] - o->oPosX;
+            f32 camDy = gCurrentArea->camera->pos[1] - o->oPosY;
+            f32 camDz = gCurrentArea->camera->pos[2] - o->oPosZ;
+
+            renderDist = sqrtf(sqr(camDx) + sqr(camDy) + sqr(camDz));
+        }
+
+        COND_BIT((renderDist < o->oDrawingDistance), o->header.gfx.node.flags, GRAPH_RENDER_ACTIVE);
     }
-
-    COND_BIT((marioDist < o->oDrawingDistance), o->header.gfx.node.flags, GRAPH_RENDER_ACTIVE);
     profiler_collision_update(first);
 }
 

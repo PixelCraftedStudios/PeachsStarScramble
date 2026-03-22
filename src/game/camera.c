@@ -243,6 +243,10 @@ s16 sCameraSoundFlags;
  */
 u16 sCButtonsPressed;
 /**
+ * Whether the optional modern camera mode is enabled.
+ */
+s8 gModernCameraEnabled;
+/**
  * A copy of gDialogID, the dialog displayed during the cutscene.
  */
 s16 sCutsceneDialogID;
@@ -3013,8 +3017,11 @@ void update_lakitu(struct Camera *c) {
  * Gets controller input, checks for cutscenes, handles mode changes, and moves the camera
  */
 void update_camera(struct Camera *c) {
-    if (c->mode == CAMERA_MODE_CUTSCENE) {
+    u8 customCutsceneActive = (c->mode == CAMERA_MODE_CUTSCENE);
+
+    if (customCutsceneActive) {
         cutscene_custom_entry();
+        customCutsceneActive = (c->mode == CAMERA_MODE_CUTSCENE);
         //return;
     }
     PROFILER_GET_SNAPSHOT_TYPE(PROFILER_DELTA_COLLISION);
@@ -3068,8 +3075,12 @@ void update_camera(struct Camera *c) {
 
     c->yaw = gLakituState.yaw;
     c->nextYaw = gLakituState.nextYaw;
-    c->mode = gLakituState.mode;
-    c->defMode = gLakituState.defMode;
+    if (customCutsceneActive) {
+        c->mode = CAMERA_MODE_CUTSCENE;
+    } else {
+        c->mode = gLakituState.mode;
+        c->defMode = gLakituState.defMode;
+    }
 #ifdef ENABLE_VANILLA_CAM_PROCESSING
     camera_course_processing(c);
 #else
@@ -3077,11 +3088,11 @@ void update_camera(struct Camera *c) {
 #endif
     sCButtonsPressed = find_c_buttons_pressed(sCButtonsPressed, gPlayer1Controller->buttonPressed, gPlayer1Controller->buttonDown);
 
-    if (c->cutscene != CUTSCENE_NONE) {
+    if (!customCutsceneActive && c->cutscene != CUTSCENE_NONE) {
         sYawSpeed = 0;
         play_cutscene(c);
         sFramesSinceCutsceneEnded = 0;
-    } else {
+    } else if (!customCutsceneActive) {
         // Clear the recent cutscene after 8 frames
         if (gRecentCutscene != CUTSCENE_NONE && sFramesSinceCutsceneEnded < 8) {
             sFramesSinceCutsceneEnded++;
@@ -3185,7 +3196,9 @@ void update_camera(struct Camera *c) {
     }
 #endif
     // Start any Mario-related cutscenes
-    start_cutscene(c, get_cutscene_from_mario_status(c));
+    if (!customCutsceneActive) {
+        start_cutscene(c, get_cutscene_from_mario_status(c));
+    }
     gCollisionFlags &= ~COLLISION_FLAG_CAMERA;
 #ifdef PUPPYCAM
     if (!gPuppyCam.enabled || c->cutscene != 0 || gCurrentArea->camera->mode == CAMERA_MODE_INSIDE_CANNON) {
@@ -3231,6 +3244,15 @@ void update_camera(struct Camera *c) {
 #endif
 
     update_lakitu(c);
+    if (customCutsceneActive) {
+        vec3f_copy(gLakituState.curPos, c->pos);
+        vec3f_copy(gLakituState.curFocus, c->focus);
+        vec3f_copy(gLakituState.pos, c->pos);
+        vec3f_copy(gLakituState.focus, c->focus);
+        update_camera_yaw(c);
+        gLakituState.yaw = c->yaw;
+        gLakituState.nextYaw = c->nextYaw;
+    }
 #ifdef PUPPYCAM
     }
     // Just a cute little bit that syncs puppycamera up to vanilla when playing a vanilla cutscene :3
@@ -3609,7 +3631,13 @@ void vec3f_to_object_pos(struct Object *obj, Vec3f src) {
     obj->oPosZ = src[2];
 }
 
-
+/**
+ * Produces values using a cubic b-spline curve. Basically Q is the used output,
+ * u is a value between 0 and 1 that represents the position along the spline,
+ * and a0-a3 are parameters that define the spline.
+ *
+ * The spline is described at www2.cs.uregina.ca/~anima/408/Notes/Interpolation/UniformBSpline.htm
+ */
 void evaluate_cubic_spline(f32 u, Vec3f Q, Vec3f spline1, Vec3f spline2, Vec3f spline3, Vec3f spline4) {
     f32 B[4];
     if (u > 1.0f) u = 1.0f;
@@ -3628,93 +3656,71 @@ void evaluate_cubic_spline(f32 u, Vec3f Q, Vec3f spline1, Vec3f spline2, Vec3f s
     Q[2] = (B[0] * spline1[2]) + (B[1] * spline2[2]) + (B[2] * spline3[2]) + (B[3] * spline4[2]);
 }
 
-// Evaluate Catmull-Rom spline segment (u in 0..1)
-void evaluate_catmull_rom(f32 u, Vec3f Q, Vec3f P0, Vec3f P1, Vec3f P2, Vec3f P3) {
-    f32 u2 = u * u;
-    f32 u3 = u2 * u;
-
-    // Catmull-Rom basis
-    f32 b0 = -0.5f*u3 + u2 - 0.5f*u;
-    f32 b1 =  1.5f*u3 - 2.5f*u2 + 1.0f;
-    f32 b2 = -1.5f*u3 + 2.0f*u2 + 0.5f*u;
-    f32 b3 =  0.5f*u3 - 0.5f*u2;
-
-    // Compute point
-    Q[0] = b0*P0[0] + b1*P1[0] + b2*P2[0] + b3*P3[0];
-    Q[1] = b0*P0[1] + b1*P1[1] + b2*P2[1] + b3*P3[1];
-    Q[2] = b0*P0[2] + b1*P1[2] + b2*P2[2] + b3*P3[2];
-}
-
-// Move point along Catmull-Rom spline
-s32 move_point_along_spline(Vec3f p, struct CutsceneSplinePoint spline[],
-                            s16 *splineSegment, f32 *progress)
-{
+/**
+ * Computes the point that is `progress` percent of the way through segment `splineSegment` of `spline`,
+ * and stores the result in `p`. `progress` and `splineSegment` are updated if `progress` becomes >= 1.0.
+ *
+ * When neither of the next two points' speeds == 0, the number of frames is between 1 and 255. Otherwise
+ * it's infinite.
+ *
+ * To calculate the number of frames it will take to progress through a spline segment:
+ * If the next two speeds are the same and nonzero, it's 1.0 / firstSpeed.
+ *
+ * s1 and s2 are short hand for first/secondSpeed. The progress at any frame n is defined by a recurrency relation:
+ *      p(n+1) = (s2 - s1 + 1) * p(n) + s1
+ * Which can be written as
+ *      p(n) = (s2 * ((s2 - s1 + 1)^(n) - 1)) / (s2 - s1)
+ *
+ * Solving for the number of frames:
+ *      n = log(((s2 - s1) / s1) + 1) / log(s2 - s1 + 1)
+ *
+ * @return 1 if the point has reached the end of the spline, when `progress` reaches 1.0 or greater, and
+ * the 4th CutsceneSplinePoint in the current segment away from spline[splineSegment] has an index of -1.
+ */
+s32 move_point_along_spline(Vec3f p, struct CutsceneSplinePoint spline[], s16 *splineSegment, f32 *progress) {
     s32 finished = FALSE;
     Vec3f controlPoints[4];
-    s16 segment = *splineSegment;
+    s32 i = 0;
+    f32 u = *progress;
+    f32 progressChange;
+    f32 firstSpeed = 0;
+    f32 secondSpeed = 0;
+    s32 segment = *splineSegment;
 
-    if (segment < 0) {
+    if (*splineSegment < 0) {
         segment = 0;
-        *splineSegment = 0;
-        *progress = 0.0f;
+        u = 0;
+    }
+    if (spline[segment].index == -1 || spline[segment + 1].index == -1 || spline[segment + 2].index == -1) {
+        return 1;
     }
 
-    // Validate
-    if (spline[segment].index == -1 ||
-        spline[segment+1].index == -1 ||
-        spline[segment+2].index == -1 ||
-        spline[segment+3].index == -1) {
-        return TRUE;
+    for (i = 0; i < 4; i++) {
+        controlPoints[i][0] = spline[segment + i].point[0];
+        controlPoints[i][1] = spline[segment + i].point[1];
+        controlPoints[i][2] = spline[segment + i].point[2];
     }
+    evaluate_cubic_spline(u, p, controlPoints[0], controlPoints[1], controlPoints[2], controlPoints[3]);
 
-    for (s32 i = 0; i < 4; i++) {
-        vec3f_copy(controlPoints[i], spline[segment+i].point);
+    if (spline[*splineSegment + 1].speed != 0) {
+        firstSpeed = 1.0f / spline[*splineSegment + 1].speed;
     }
-
-    // Detect last segment
-    s32 isLastSegment = (spline[segment+4].index == -1);
-
-    // Normal speed
-    f32 speed = (spline[segment+1].speed != 0)
-        ? (1.0f / spline[segment+1].speed)
-        : 0.01f;
-
-    *progress += speed;
-
-    // Clamp cleanly
-    if (*progress >= 1.0f) {
-        *progress = 1.0f;
+    if (spline[*splineSegment + 2].speed != 0) {
+        secondSpeed = 1.0f / spline[*splineSegment + 2].speed;
     }
+    progressChange = (secondSpeed - firstSpeed) * *progress + firstSpeed;
 
-    // ---------
-    // EASE POSITION (NOT SPEED)
-    // ---------
-    f32 evalT = *progress;
-
-    if (isLastSegment) {
-        // Proper ease-out curve
-        // Smooth and guaranteed finish
-        evalT = 1.0f - (1.0f - evalT) * (1.0f - evalT);
-    }
-
-    evaluate_catmull_rom(evalT, p,
-        controlPoints[0], controlPoints[1],
-        controlPoints[2], controlPoints[3]);
-
-    // Finish logic
-    if (*progress >= 1.0f) {
-
-        if (isLastSegment) {
-            finished = TRUE;
-            return finished;
-        }
-
-        *progress = 0.0f;
+    if (1 <= (*progress += progressChange)) {
         (*splineSegment)++;
+        if (spline[*splineSegment + 3].index == -1) {
+            *splineSegment = 0;
+            finished = 1;
+        }
+        (*progress)--;
     }
-
     return finished;
 }
+
 /**
  * If `selection` is 0, just get the current selection
  * If `selection` is 1, select 'Mario' as the alt mode.
@@ -6213,6 +6219,9 @@ struct CameraTrigger sCamBowser_2[] = {
 };
 struct CameraTrigger sCamPSS[] = {
 	NULL_TRIGGER
+};
+struct CameraTrigger sCamCastleCourtyard[] = {
+    NULL_TRIGGER
 };
 struct CameraTrigger *sCameraTriggers[LEVEL_COUNT + 1] = {
     NULL,
@@ -10564,7 +10573,7 @@ u8 sZoomOutAreaMasks[] = {
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // VCUTM          | BITFS
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // SA             | BITS
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // LLL            | DDD
-	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 0, 0, 0, 0), // WF             | ENDING
+	ZOOMOUT_AREA_MASK(1, 1, 1, 0, 0, 0, 0, 0), // WF             | ENDING
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // COURTYARD      | PSS
 	ZOOMOUT_AREA_MASK(0, 0, 0, 0, 1, 0, 0, 0), // COTMC          | TOTWC
 	ZOOMOUT_AREA_MASK(1, 0, 0, 0, 1, 0, 0, 0), // BOWSER_1       | WMOTR

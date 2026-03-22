@@ -3,7 +3,6 @@
 
 #define MODEL_NONE                             0x00
 
-/* fast64 object exports get inserted here */
 
 /* Global models that are loaded for every level */
 
@@ -24,7 +23,8 @@ Falling Rock - 0xEC
 Piranha Alt - 0xED
 Peng Boss - 0xEE
 Test Yoshi - 0xEF
-New Bomb - 0xF0
+Police Shy - 0xF0
+1 Star Barrier - 0xF1
 
 */
 #define MODEL_PEACH_TELL                  0xE4
@@ -39,6 +39,13 @@ New Bomb - 0xF0
 #define MODEL_PIRANHAALT                  0xED
 #define MODEL_PENGBOSS                    0xEE
 #define MODEL_TESTYOSHI                   0xEF
+#define MODEL_POLICESHY                   0xF0
+#define MODEL__1STARBARRIER               0xF1
+#define MODEL_GOOMBOSS                    0xF2
+#define MODEL_BOPPINGFLOWER               0xF3
+#define MODEL_C2GATE                      0xF4
+
+
 
 /* Various static level geometry, the geo layout differs but terrain object presets treat them the same.*/
 

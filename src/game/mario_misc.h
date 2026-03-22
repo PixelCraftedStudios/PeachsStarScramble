@@ -31,4 +31,11 @@ Gfx *geo_switch_mario_hand_grab_pos(s32 callContext, struct GraphNode *node, Mat
 Gfx *geo_render_mirror_mario(s32 callContext, struct GraphNode *node, UNUSED Mat4 *mtx);
 Gfx *geo_mirror_mario_backface_culling(s32 callContext, struct GraphNode *node, UNUSED Mat4 *mtx);
 
+// Compatibility hooks used by the custom Mario geo generated in actors/mario/geo.inc.c.
+Gfx *Geo_Switch_DoNothing(s32 callContext, struct GraphNode *node, UNUSED Mat4 *mtx);
+Gfx *Geo_ApplyMarioNoseJiggle(s32 callContext, struct GraphNode *node, UNUSED Mat4 *mtx);
+Gfx *Geo_MarioNoseJiggle(s32 callContext, struct GraphNode *node, UNUSED Mat4 *mtx);
+Gfx *geo_mario_lights(s32 callContext, struct GraphNode *node, UNUSED Mat4 *mtx);
+Gfx *geo_mario_reset_lights(s32 callContext, struct GraphNode *node, UNUSED Mat4 *mtx);
+
 #endif // MARIO_MISC_H

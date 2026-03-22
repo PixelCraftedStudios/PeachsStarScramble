@@ -1,0 +1,5 @@
+enum GoombossAnims {
+	GOOMBOSS_ANIM_DIE,
+	GOOMBOSS_ANIM_IDLE,
+	GOOMBOSS_ANIM_THROW,
+};

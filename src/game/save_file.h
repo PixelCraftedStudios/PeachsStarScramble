@@ -62,6 +62,7 @@ struct MainMenuSaveData {
 #ifdef WIDE
     u8 wideMode: 1;
 #endif
+    u8 modernCameraMode: 1;
 
 #if MULTILANG
     u8 language: 2;
@@ -169,6 +170,7 @@ void save_file_do_save(s32 fileIndex);
 void save_file_erase(s32 fileIndex);
 void save_file_copy(s32 srcFileIndex, s32 destFileIndex);
 void save_file_load_all(void);
+void load_specific_save(s32 slot);
 void save_file_reload(void);
 void save_file_collect_star_or_key(s16 coinScore, s16 starIndex);
 s32 save_file_exists(s32 fileIndex);
@@ -187,6 +189,8 @@ void save_file_set_cap_pos(s16 x, s16 y, s16 z);
 s32 save_file_get_cap_pos(Vec3s capPos);
 void save_file_set_sound_mode(u16 mode);
 u32 save_file_get_sound_mode(void);
+u32 save_file_get_modern_camera_mode(void);
+void save_file_set_modern_camera_mode(u8 mode);
 #ifdef WIDE
 u32 save_file_get_widescreen_mode(void);
 void save_file_set_widescreen_mode(u8 mode);
@@ -209,7 +213,5 @@ u32 eu_get_language(void);
 #else
 #define LANGUAGE_ENGLISH 0
 #endif
-
-void load_specific_save(s32 slot);
 
 #endif // SAVE_FILE_H

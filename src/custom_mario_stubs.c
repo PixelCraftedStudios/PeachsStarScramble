@@ -1,23 +1,23 @@
-#include <ultra64.h>
+#include "sm64.h"
 
 /* Stubs for Fast64 / Mario geo features */
 
-void Geo_Switch_DoNothing(void) {
-    /* intentionally empty */
+Gfx *Geo_Switch_DoNothing(UNUSED s32 callContext, UNUSED struct GraphNode *node, UNUSED Mat4 *mtx) {
+    return NULL;
 }
 
-void Geo_ApplyMarioNoseJiggle(void) {
-    /* no-op */
+Gfx *Geo_ApplyMarioNoseJiggle(UNUSED s32 callContext, UNUSED struct GraphNode *node, UNUSED Mat4 *mtx) {
+    return NULL;
 }
 
-void Geo_MarioNoseJiggle(void) {
-    /* no-op */
+Gfx *Geo_MarioNoseJiggle(UNUSED s32 callContext, UNUSED struct GraphNode *node, UNUSED Mat4 *mtx) {
+    return NULL;
 }
 
-void geo_mario_lights(void) {
-    /* no-op */
+Gfx *geo_mario_lights(UNUSED s32 callContext, UNUSED struct GraphNode *node, UNUSED Mat4 *mtx) {
+    return NULL;
 }
 
-void geo_mario_reset_lights(void) {
-    /* no-op */
+Gfx *geo_mario_reset_lights(UNUSED s32 callContext, UNUSED struct GraphNode *node, UNUSED Mat4 *mtx) {
+    return NULL;
 }

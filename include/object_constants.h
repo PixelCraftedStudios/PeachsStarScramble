@@ -49,6 +49,8 @@ enum ObjFlags {
     OBJ_FLAG_PERSISTENT_RESPAWN                = (1 << 14), // 0x00004000
     OBJ_FLAG_NO_AUTO_DISPLACEMENT              = (1 << 15), // 0x00008000
     OBJ_FLAG_DONT_CALC_COLL_DIST               = (1 << 16), // 0x00010000
+    OBJ_FLAG_CULL_BY_CAMERA_POS                = (1 << 17), // 0x00020000
+    OBJ_FLAG_DISABLE_RENDER_CULL              = (1 << 18), // 0x00040000
     OBJ_FLAG_SILHOUETTE                        = (1 << 19), // 0x00080000
     OBJ_FLAG_OCCLUDE_SILHOUETTE                = (1 << 20), // 0x00100000
     OBJ_FLAG_OPACITY_FROM_CAMERA_DIST          = (1 << 21), // 0x00200000
@@ -2710,5 +2712,13 @@ enum gCutsceneObjSpawns {
     CUTSCENE_OBJ_5_END_BIRDS_2,
     CUTSCENE_OBJ_2_END_BIRDS_1
 };
+
+/* Goomboss */
+    /* oAction */
+    #define GOOMBOSS_ACT_INTRO      0x0
+    #define GOOMBOSS_ACT_ACTIVE     0x1
+    #define GOOMBOSS_ACT_HIT        0x2
+    #define GOOMBOSS_ACT_DEATH      0x3
+    #define GOOMBOSS_ACT_STOP_MUSIC 0x4
 
 #endif // OBJECT_CONSTANTS_H

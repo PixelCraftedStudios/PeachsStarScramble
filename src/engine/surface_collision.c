@@ -71,6 +71,10 @@ static s32 find_wall_collisions_from_list(struct SurfaceNode *surfaceNode, struc
         surfaceNode = surfaceNode->next;
         type        = surf->type;
 
+        s32 isDoubleSidedWall = (type == SURFACE_DOUBLE_SIDED_WALL);
+        f32 wallNormalX = surf->normal.x;
+        f32 wallNormalZ = surf->normal.z;
+
         // Exclude a large number of walls immediately to optimize.
         if (pos[1] < surf->lowerY || pos[1] > surf->upperY) continue;
 
@@ -95,6 +99,12 @@ static s32 find_wall_collisions_from_list(struct SurfaceNode *surfaceNode, struc
                + (surf->normal.y * pos[1])
                + (surf->normal.z * pos[2])
                + surf->originOffset;
+
+        if (isDoubleSidedWall && offset < 0.0f) {
+            offset = -offset;
+            wallNormalX = -wallNormalX;
+            wallNormalZ = -wallNormalZ;
+        }
 
         // Exclude surfaces outside of the radius.
         if (offset < -radius || offset > radius) continue;
@@ -143,13 +153,13 @@ static s32 find_wall_collisions_from_list(struct SurfaceNode *surfaceNode, struc
             pos[2] += (d01 *= invDenom);
             margin_radius += 0.01f;
 
-            if ((d00 * surf->normal.x) + (d01 * surf->normal.z) < (corner_threshold * offset)) {
+            if ((d00 * wallNormalX) + (d01 * wallNormalZ) < (corner_threshold * offset)) {
                 continue;
             }
         } else {
             // Update pos
-            pos[0] += surf->normal.x * (radius - offset);
-            pos[2] += surf->normal.z * (radius - offset);
+            pos[0] += wallNormalX * (radius - offset);
+            pos[2] += wallNormalZ * (radius - offset);
         }
 
         // Has collision

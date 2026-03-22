@@ -275,6 +275,76 @@ void adjust_sound_for_speed(struct MarioState *m) {
     set_sound_moving_speed(SOUND_BANK_MOVING, (absForwardVel > 100) ? 100 : absForwardVel);
 }
 
+static s32 mario_floor_is_noisy_grass_surface(struct MarioState *m) {
+    if (m->floor == NULL) {
+        return FALSE;
+    }
+
+    switch (m->floor->type) {
+        case SURFACE_NOISE_DEFAULT:
+        case SURFACE_NOISE_SLIPPERY:
+        case SURFACE_NOISE_VERY_SLIPPERY_73:
+        case SURFACE_NOISE_VERY_SLIPPERY_74:
+        case SURFACE_NOISE_VERY_SLIPPERY:
+        case SURFACE_NOISE_NONSLIPPERY:
+            return TRUE;
+    }
+
+    return FALSE;
+}
+
+static s32 mario_floor_is_reveal_surface(struct MarioState *m) {
+    return (m->floor != NULL && m->floor->type == SURFACE_HARD_NOT_SLIPPERY_REVEAL);
+}
+
+static s32 mario_floor_has_metal_step_sound(struct MarioState *m) {
+    return (m->floor != NULL && m->floor->type == SURFACE_HARD_NOT_SLIPPERY_METAL);
+}
+
+static void set_reveal_impact_particles(struct MarioState *m, s32 heavy) {
+    if (!mario_floor_is_reveal_surface(m)) {
+        return;
+    }
+
+    // Keep impact reveal effects lightweight to avoid particle pool pressure.
+    m->particleFlags |= PARTICLE_MIST_CIRCLE;
+    if (heavy) {
+        m->particleFlags |= PARTICLE_SPARKLES;
+    }
+}
+
+static void update_reveal_surface_particles(struct MarioState *m) {
+    if ((m->input & INPUT_OFF_FLOOR) || (m->area == NULL)) {
+        return;
+    }
+
+    if (!mario_floor_is_reveal_surface(m) && (m->input & INPUT_NONZERO_ANALOG) && (gGlobalTimer % 6 == 0)) {
+        // Pre-reveal: if a reveal floor is directly in front, show a hint ring.
+        struct Surface *aheadFloor = NULL;
+        f32 aheadX = m->pos[0] + sins(m->faceAngle[1]) * 140.0f;
+        f32 aheadZ = m->pos[2] + coss(m->faceAngle[1]) * 140.0f;
+        f32 aheadY = find_floor(aheadX, m->pos[1] + 100.0f, aheadZ, &aheadFloor);
+
+        if (aheadFloor != NULL
+            && aheadFloor->type == SURFACE_HARD_NOT_SLIPPERY_REVEAL
+            && absf(aheadY - m->pos[1]) < 180.0f
+            && (gGlobalTimer & 1)) {
+            m->particleFlags |= PARTICLE_SPARKLES;
+        }
+
+        return;
+    }
+
+    if (!mario_floor_is_reveal_surface(m)) {
+        return;
+    }
+
+    // Reveal a small nearby area while traversing the hidden floor.
+    if ((m->input & INPUT_NONZERO_ANALOG) && m->lateralSpeed > 4.0f && (gGlobalTimer % 4 == 0)) {
+        m->particleFlags |= PARTICLE_SPARKLES;
+    }
+}
+
 /**
  * Spawns particles if the step sound says to, then either plays a step sound or relevant other sound.
  */
@@ -290,6 +360,30 @@ void play_sound_and_spawn_particles(struct MarioState *m, u32 soundBits, u32 wav
             m->particleFlags |= PARTICLE_DIRT;
         } else if (m->terrainSoundAddend == (SOUND_TERRAIN_SNOW << 16)) {
             m->particleFlags |= PARTICLE_SNOW;
+        }
+
+        // Spawn visible grass kickup on noisy grass-tagged surfaces.
+        // PARTICLE_LEAF depends on nearby trees, so use PARTICLE_DIRT for reliable footsteps.
+        if (mario_floor_is_noisy_grass_surface(m)
+            && (soundBits == SOUND_ACTION_TERRAIN_STEP
+                || soundBits == SOUND_ACTION_TERRAIN_STEP_TIPTOE)) {
+            m->particleFlags |= PARTICLE_LEAF;
+        }
+
+        if (mario_floor_is_reveal_surface(m)) {
+            m->particleFlags |= PARTICLE_SPARKLES;
+        }
+    }
+
+    if (!(m->flags & MARIO_METAL_CAP) && mario_floor_has_metal_step_sound(m)) {
+        if (soundBits == SOUND_ACTION_TERRAIN_STEP) {
+            play_sound(SOUND_ACTION_METAL_STEP, m->marioObj->header.gfx.cameraToObject);
+            return;
+        }
+
+        if (soundBits == SOUND_ACTION_TERRAIN_STEP_TIPTOE) {
+            play_sound(SOUND_ACTION_METAL_STEP_TIPTOE, m->marioObj->header.gfx.cameraToObject);
+            return;
         }
     }
 
@@ -317,6 +411,7 @@ void play_mario_action_sound(struct MarioState *m, u32 soundBits, u32 wavePartic
 void play_mario_landing_sound(struct MarioState *m, u32 soundBits) {
     play_sound_and_spawn_particles(
         m, (m->flags & MARIO_METAL_CAP) ? SOUND_ACTION_METAL_LANDING : soundBits, 1);
+    set_reveal_impact_particles(m, FALSE);
 }
 
 /**
@@ -327,6 +422,7 @@ void play_mario_landing_sound(struct MarioState *m, u32 soundBits) {
 void play_mario_landing_sound_once(struct MarioState *m, u32 soundBits) {
     play_mario_action_sound(
         m, (m->flags & MARIO_METAL_CAP) ? SOUND_ACTION_METAL_LANDING : soundBits, 1);
+    set_reveal_impact_particles(m, FALSE);
 }
 
 /**
@@ -335,6 +431,7 @@ void play_mario_landing_sound_once(struct MarioState *m, u32 soundBits) {
 void play_mario_heavy_landing_sound(struct MarioState *m, u32 soundBits) {
     play_sound_and_spawn_particles(
         m, (m->flags & MARIO_METAL_CAP) ? SOUND_ACTION_METAL_HEAVY_LANDING : soundBits, 1);
+    set_reveal_impact_particles(m, TRUE);
 }
 
 /**
@@ -345,6 +442,7 @@ void play_mario_heavy_landing_sound(struct MarioState *m, u32 soundBits) {
 void play_mario_heavy_landing_sound_once(struct MarioState *m, u32 soundBits) {
     play_mario_action_sound(
         m, (m->flags & MARIO_METAL_CAP) ? SOUND_ACTION_METAL_HEAVY_LANDING : soundBits, 1);
+    set_reveal_impact_particles(m, TRUE);
 }
 
 /**
@@ -404,6 +502,8 @@ s32 mario_get_floor_class(struct MarioState *m) {
         switch (m->floor->type) {
             case SURFACE_NOT_SLIPPERY:
             case SURFACE_HARD_NOT_SLIPPERY:
+            case SURFACE_HARD_NOT_SLIPPERY_REVEAL:
+            case SURFACE_HARD_NOT_SLIPPERY_METAL:
             case SURFACE_SWITCH:
                 floorClass = SURFACE_CLASS_NOT_SLIPPERY;
                 break;
@@ -487,6 +587,8 @@ u32 mario_get_terrain_sound_addend(struct MarioState *m) {
                 case SURFACE_NOT_SLIPPERY:
                 case SURFACE_HARD:
                 case SURFACE_HARD_NOT_SLIPPERY:
+                case SURFACE_HARD_NOT_SLIPPERY_REVEAL:
+                case SURFACE_HARD_NOT_SLIPPERY_METAL:
                 case SURFACE_SWITCH:
                     floorSoundType = 1;
                     break;
@@ -598,7 +700,7 @@ s32 mario_floor_is_steep(struct MarioState *m) {
         return TRUE;
 
 #ifdef JUMP_KICK_FIX
-    if (m->floor->type == SURFACE_NOT_SLIPPERY) {
+    if (m->floor->type == SURFACE_NOT_SLIPPERY || m->floor->type == SURFACE_HARD_NOT_SLIPPERY_REVEAL) {
         return FALSE;
     }
 #endif
@@ -1197,6 +1299,8 @@ s32 set_water_plunge_action(struct MarioState *m) {
 u8 sSquishScaleOverTime[16] = { 0x46, 0x32, 0x32, 0x3C, 0x46, 0x50, 0x50, 0x3C,
                                 0x28, 0x14, 0x14, 0x1E, 0x32, 0x3C, 0x3C, 0x28 };
 
+#define MARIO_RUNTIME_MODEL_SCALE (1.0f / 4.24f)
+
 /**
  * Applies the squish to Mario's model via scaling.
  */
@@ -1242,6 +1346,10 @@ if (m->squishTimer == 0) {
     m->marioObj->header.gfx.scale[0] *= stretchXZ;
     m->marioObj->header.gfx.scale[2] *= stretchXZ;
 }
+
+    m->marioObj->header.gfx.scale[0] *= MARIO_RUNTIME_MODEL_SCALE;
+    m->marioObj->header.gfx.scale[1] *= MARIO_RUNTIME_MODEL_SCALE;
+    m->marioObj->header.gfx.scale[2] *= MARIO_RUNTIME_MODEL_SCALE;
 
 
 }
@@ -1405,6 +1513,7 @@ void update_mario_inputs(struct MarioState *m) {
     update_mario_button_inputs(m);
     update_mario_joystick_inputs(m);
     update_mario_geometry_inputs(m);
+    update_reveal_surface_particles(m);
 #ifdef VANILLA_DEBUG
     debug_print_speed_action_normal(m);
 #endif

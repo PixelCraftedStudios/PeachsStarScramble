@@ -3,6 +3,7 @@
 
 #include "audio/external.h"
 #include "behavior_data.h"
+#include "engine/math_util.h"
 #include "engine/behavior_script.h"
 #include "engine/graph_node.h"
 #include "eu_translation.h"
@@ -35,9 +36,89 @@ static u8 sInitSelectedActNum;
 static s8 sSelectedActIndex = 0;
 static s8 sSelectableStarIndex = 0;
 static s32 sActSelectorMenuTimer = 0;
+static u8 sGradientTopR = 36;
+static u8 sGradientTopG = 58;
+static u8 sGradientTopB = 110;
+static u8 sGradientBottomR = 10;
+static u8 sGradientBottomG = 24;
+static u8 sGradientBottomB = 54;
+
+#define STAR_SELECT_ROW_Y 160
+#define STAR_SELECT_100_COIN_Y 120
+#define STAR_SELECT_COURSE_NAME_Y 150
+#define STAR_SELECT_COURSE_NUMBER_Y 206
+#define STAR_SELECT_ACT_NAME_Y 228
 
 // Internal state to handle the 0.1s exit delay
 static s8 sIsActSelected = FALSE;
+
+static void render_star_select_themed_background(void) {
+    s16 pulseA = sins(gGlobalTimer * 0x0800);
+    s16 pulseB = sins(gGlobalTimer * 0x1200);
+    s16 driftA = sins(gGlobalTimer * 0x0400);
+    s16 driftB = coss(gGlobalTimer * 0x0600);
+    s32 i;
+    s32 x;
+
+    for (i = 0; i < 7; i++) {
+        f32 t = i / 6.0f;
+        u8 r = (u8) (sGradientTopR + (sGradientBottomR - sGradientTopR) * t);
+        u8 g = (u8) (sGradientTopG + (sGradientBottomG - sGradientTopG) * t);
+        u8 b = (u8) (sGradientTopB + (sGradientBottomB - sGradientTopB) * t);
+        f32 y = 218.0f - (i * 30.0f);
+
+        create_dl_translation_matrix(MENU_MTX_PUSH, 160.0f, y, 0.0f);
+        create_dl_scale_matrix(MENU_MTX_NOPUSH, 8.2f, 0.78f, 1.0f);
+        gDPSetEnvColor(gDisplayListHead++, r, g, b, 44 + (pulseA * 6.0f));
+        gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+        gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
+    }
+
+    for (i = 0; i < 3; i++) {
+        f32 y = 52.0f + (i * 78.0f);
+        f32 width = 2.55f - (i * 0.25f);
+        f32 height = 0.22f + (i * 0.03f);
+
+        create_dl_translation_matrix(MENU_MTX_PUSH, 160.0f + (driftA * (0.02f + i * 0.01f)), y, 0.0f);
+        create_dl_scale_matrix(MENU_MTX_NOPUSH, width, height, 1.0f);
+        gDPSetEnvColor(gDisplayListHead++, sGradientTopR + 36, sGradientTopG + 24, sGradientTopB + 12, 56 + (pulseB * 8.0f));
+        gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+        gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
+    }
+
+    create_dl_translation_matrix(MENU_MTX_PUSH, 160.0f, STAR_SELECT_ROW_Y + 4.0f, 0.0f);
+    create_dl_scale_matrix(MENU_MTX_NOPUSH, 2.85f, 0.88f, 1.0f);
+    gDPSetEnvColor(gDisplayListHead++, 4, 8, 18, 138);
+    gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
+
+    create_dl_translation_matrix(MENU_MTX_PUSH, 160.0f, STAR_SELECT_ROW_Y + 4.0f, 0.0f);
+    create_dl_scale_matrix(MENU_MTX_NOPUSH, 2.72f, 0.74f, 1.0f);
+    gDPSetEnvColor(gDisplayListHead++, sGradientBottomR + 6, sGradientBottomG + 10, sGradientBottomB + 18, 118);
+    gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
+
+    create_dl_translation_matrix(MENU_MTX_PUSH, 160.0f, STAR_SELECT_ROW_Y - 38.0f, 0.0f);
+    create_dl_scale_matrix(MENU_MTX_NOPUSH, 2.78f, 0.08f, 1.0f);
+    gDPSetEnvColor(gDisplayListHead++, sGradientTopR + 34, sGradientTopG + 28, sGradientTopB + 20, 128 + (pulseB * 8.0f));
+    gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
+
+    create_dl_translation_matrix(MENU_MTX_PUSH, 160.0f, STAR_SELECT_ROW_Y + 46.0f, 0.0f);
+    create_dl_scale_matrix(MENU_MTX_NOPUSH, 2.62f, 0.05f, 1.0f);
+    gDPSetEnvColor(gDisplayListHead++, sGradientTopR + 18, sGradientTopG + 14, sGradientTopB + 10, 92 + (pulseA * 6.0f));
+    gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
+
+    for (i = 0; i < 2; i++) {
+        x = 78 + (i * 164);
+        create_dl_translation_matrix(MENU_MTX_PUSH, x + (i == 0 ? driftA * 0.035f : driftB * 0.03f), STAR_SELECT_ROW_Y + (i == 0 ? -4.0f : 8.0f), 0.0f);
+        create_dl_scale_matrix(MENU_MTX_NOPUSH, 0.55f, 1.18f, 1.0f);
+        gDPSetEnvColor(gDisplayListHead++, sGradientTopR + 44, sGradientTopG + 34, sGradientTopB + 16, 64 + (pulseA * 10.0f));
+        gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+        gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
+    }
+}
 
 void bhv_act_selector_star_type_loop(void) {
     switch (gCurrentObject->oStarSelectorType) {
@@ -71,7 +152,7 @@ void render_100_coin_star(u8 stars) {
         if (gConfig.widescreen) xPos = (370 * 4.0f) / 3;
 #endif
         sStarSelectorModels[6] = spawn_object_abs_with_rot(o, 0, MODEL_STAR,
-                                    bhvActSelectorStarType, xPos, 24, -300, 0, 0, 0);
+                                    bhvActSelectorStarType, xPos, STAR_SELECT_100_COIN_Y, -300, 0, 0, 0);
         sStarSelectorModels[6]->oStarSelectorSize = 0.8f;
         sStarSelectorModels[6]->oStarSelectorType = STAR_SELECTOR_100_COINS;
     }
@@ -116,7 +197,7 @@ void bhv_act_selector_init(void) {
         if (gConfig.widescreen) xBase = (xBase * 4.0f) / 3;
 #endif
         sStarSelectorModels[i] = spawn_object_abs_with_rot(o, 0, selectorModelIDs[i], 
-                                    bhvActSelectorStarType, xBase, 248, -300, 0, 0, 0);
+                        bhvActSelectorStarType, xBase, STAR_SELECT_ROW_Y, -300, 0, 0, 0);
         sStarSelectorModels[i]->oStarSelectorSize = 1.0f;
     }
 
@@ -165,21 +246,10 @@ void print_course_number(s16 language) {
 void print_course_number(void) {
 #endif
     u8 courseNum[4];
-    create_dl_translation_matrix(MENU_MTX_PUSH, 158.0f, 81.0f, 0.0f);
-    gSPDisplayList(gDisplayListHead++, dl_menu_rgba16_wood_course);
-#if MULTILANG
-    switch (language) {
-        case LANGUAGE_ENGLISH: gSPDisplayList(gDisplayListHead++, dl_menu_texture_course_upper); break;
-        case LANGUAGE_FRENCH:  gSPDisplayList(gDisplayListHead++, dl_menu_texture_niveau_upper); break;
-        case LANGUAGE_GERMAN:  gSPDisplayList(gDisplayListHead++, dl_menu_texture_kurs_upper);   break;
-    }
-    gSPDisplayList(gDisplayListHead++, dl_menu_rgba16_wood_course_end);
-#endif
-    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
     gSPDisplayList(gDisplayListHead++, dl_rgba16_text_begin);
     gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, 255);
     int_to_str(gCurrCourseNum, courseNum);
-    print_hud_lut_string(HUD_LUT_GLOBAL, (gCurrCourseNum < 10 ? 152 : 143), 158, courseNum);
+    print_hud_lut_string(HUD_LUT_GLOBAL, (gCurrCourseNum < 10 ? 152 : 143), STAR_SELECT_COURSE_NUMBER_Y, courseNum);
     gSPDisplayList(gDisplayListHead++, dl_rgba16_text_end);
 }
 
@@ -195,7 +265,9 @@ void print_act_selector_strings(void) {
     u8 **actNameTbl;
     u8 *currLevelName;
     u8 *selectedActName;
+    u8 *courseNameText;
     s8 i;
+    s16 titleMenuX;
 
     create_dl_ortho_matrix();
 
@@ -211,6 +283,7 @@ void print_act_selector_strings(void) {
     actNameTbl = segmented_to_virtual(seg2_act_name_table);
 #endif
     currLevelName = segmented_to_virtual(levelNameTbl[COURSE_NUM_TO_INDEX(gCurrCourseNum)]);
+    courseNameText = currLevelName + 3;
 
     gSPDisplayList(gDisplayListHead++, dl_rgba16_text_begin);
     gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, 255);
@@ -221,12 +294,15 @@ void print_act_selector_strings(void) {
     gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, 255);
     if (save_file_get_course_coin_score(gCurrSaveFileNum - 1, COURSE_NUM_TO_INDEX(gCurrCourseNum)) != 0) {
 #if MULTILANG
+        print_generic_string(96, 117, myScore[language]);
+        gDPSetEnvColor(gDisplayListHead++, 240, 240, 240, 255);
         print_generic_string(95, 118, myScore[language]);
 #else
+        print_generic_string(103, 117, myScore);
+        gDPSetEnvColor(gDisplayListHead++, 240, 240, 240, 255);
         print_generic_string(102, 118, myScore);
 #endif
     }
-    print_generic_string(get_str_x_pos_from_center(160, (currLevelName + 3), 10.0f), 33, currLevelName + 3);
     gSPDisplayList(gDisplayListHead++, dl_ia_text_end);
 
 #if MULTILANG
@@ -235,17 +311,35 @@ void print_act_selector_strings(void) {
     print_course_number();
 #endif
 
+    titleMenuX = get_str_x_pos_from_center(160, courseNameText, 8.0f);
+    gSPDisplayList(gDisplayListHead++, dl_rgba16_text_begin);
+    gDPSetEnvColor(gDisplayListHead++, 255,
+                   220 + (sins(gGlobalTimer * 0x0D00) * 14.0f),
+                   140 + (sins(gGlobalTimer * 0x1100) * 18.0f), 255);
+    print_hud_lut_string(HUD_LUT_GLOBAL, titleMenuX, STAR_SELECT_COURSE_NAME_Y, courseNameText);
+    gSPDisplayList(gDisplayListHead++, dl_rgba16_text_end);
+
     gSPDisplayList(gDisplayListHead++, dl_menu_ia8_text_begin);
+
     gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, 255);
     if (sVisibleStars != 0) {
         selectedActName = segmented_to_virtual(actNameTbl[COURSE_NUM_TO_INDEX(gCurrCourseNum) * 6 + sSelectedActIndex]);
-        print_menu_generic_string(get_str_x_pos_from_center(163, selectedActName, 8.0f), 81, selectedActName);
+        print_menu_generic_string(get_str_x_pos_from_center(163, selectedActName, 8.0f) + 1, STAR_SELECT_ACT_NAME_Y, selectedActName);
+        gDPSetEnvColor(gDisplayListHead++, 255,
+                       232 + (sins(gGlobalTimer * 0x1000) * 10.0f),
+                       160 + (sins(gGlobalTimer * 0x0A00) * 18.0f), 255);
+        print_menu_generic_string(get_str_x_pos_from_center(163, selectedActName, 8.0f), STAR_SELECT_ACT_NAME_Y + 1, selectedActName);
     }
     for (i = 1; i <= sVisibleStars; i++) {
         starNumbers[0] = i;
+        gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, 255);
 #if MULTILANG
+        print_menu_generic_string(143 - sVisibleStars * 15 + i * 30 + 1, 37, starNumbers);
+        gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, 255);
         print_menu_generic_string(143 - sVisibleStars * 15 + i * 30, 38, starNumbers);
 #else
+        print_menu_generic_string(139 - sVisibleStars * 17 + i * 34 + 1, 37, starNumbers);
+        gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, 255);
         print_menu_generic_string(139 - sVisibleStars * 17 + i * 34, 38, starNumbers);
 #endif
     }
@@ -264,6 +358,12 @@ s32 lvl_init_act_selector_values_and_stars(UNUSED s32 arg, UNUSED s32 unused) {
     sVisibleStars = 0;
     sActSelectorMenuTimer = 0;
     sIsActSelected = FALSE;
+    sGradientTopR = 58 + (random_u16() & 0x3F);
+    sGradientTopG = 58 + (random_u16() & 0x3F);
+    sGradientTopB = 58 + (random_u16() & 0x3F);
+    sGradientBottomR = 10 + (random_u16() & 0x1F);
+    sGradientBottomG = 10 + (random_u16() & 0x1F);
+    sGradientBottomB = 10 + (random_u16() & 0x1F);
     sObtainedStars = save_file_get_course_star_count(gCurrSaveFileNum - 1, COURSE_NUM_TO_INDEX(gCurrCourseNum));
     if (stars & STAR_FLAG_ACT_100_COINS) sObtainedStars--;
     return 0;

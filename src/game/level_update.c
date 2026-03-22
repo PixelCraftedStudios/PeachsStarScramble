@@ -38,6 +38,17 @@
 
 // TODO: Make these ifdefs better
 const char *credits01[] = { "1GAME DIRECTOR", "SHIGERU MIYAMOTO" };
+
+u8 gBombButtonCutsceneRequested = FALSE;
+
+static void process_custom_cutscene_requests(void) {
+    if (gBombButtonCutsceneRequested) {
+        StartCutscene(CUSTOM_CUTSCENE_BOMBBUTTON);
+        if (gCamera != NULL && gCamera->mode == CAMERA_MODE_CUTSCENE) {
+            gBombButtonCutsceneRequested = FALSE;
+        }
+    }
+}
 const char *credits02[] = { "2ASSISTANT DIRECTORS", "YOSHIAKI KOIZUMI", "TAKASHI TEZUKA" };
 const char *credits03[] = { "2SYSTEM PROGRAMMERS", "YASUNARI NISHIDA", "YOSHINORI TANIMOTO" };
 const char *credits04[] = { "3PROGRAMMERS", "HAJIME YAJIMA", "DAIKI IWAMOTO", "TOSHIO IWAWAKI" };
@@ -1002,6 +1013,7 @@ void update_hud_values(void) {
 void basic_update(void) {
     area_update_objects();
     update_hud_values();
+    process_custom_cutscene_requests();
 
     if (gCurrentArea != NULL) {
         update_camera(gCurrentArea->camera);
@@ -1044,6 +1056,7 @@ s32 play_mode_normal(void) {
     area_update_objects();
 #endif
     update_hud_values();
+    process_custom_cutscene_requests();
     if (gCurrentArea != NULL) {
 #ifdef PUPPYPRINT_DEBUG
 #ifdef BETTER_REVERB
@@ -1353,7 +1366,7 @@ void ManageCutscenes(s16 initOrUpdate){
             StartCutscene(CUSTOM_CUTSCENE_MH);
             break;
         case LEVEL_WF:
-            //StartCutscene(CUSTOM_CUTSCENE_SHELLSHOCK);
+            StartCutscene(CUSTOM_CUTSCENE_GOOMBOMB);
             break;
 
 
@@ -1440,6 +1453,7 @@ s32 lvl_set_current_level(UNUSED s16 initOrUpdate, s32 levelNum) {
         return FALSE;
     }
 	if (gCurrLevelNum == LEVEL_THI) return 0;
+	if (gCurrLevelNum == LEVEL_CASTLE_COURTYARD) return 0;
 
     return !gDebugLevelSelect;
 }

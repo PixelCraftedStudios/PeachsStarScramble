@@ -217,49 +217,36 @@ static void chain_chomp_released_trigger_cutscene(void) {
     o->oForwardVel = 0.0f;
     o->oGravity = -4.0f;
 
-    //! Can delay this if we get into a cutscene-unfriendly action after the
-    //  last post ground pound and before this
-    if (set_mario_npc_dialog(MARIO_DIALOG_LOOK_UP) == MARIO_DIALOG_STATUS_SPEAK 
-        && (o->oMoveFlags & OBJ_MOVE_MASK_ON_GROUND) && cutscene_object(CUTSCENE_STAR_SPAWN, o) == 1) {
+    // Skip cutscene/dialog flow and continue directly into released behavior.
+    if (o->oMoveFlags & OBJ_MOVE_MASK_ON_GROUND) {
         o->oChainChompReleaseStatus = CHAIN_CHOMP_RELEASED_LUNGE_AROUND;
         o->oTimer = 0;
     }
 }
 
 /**
- * Lunge 4 times, each time moving toward mario +/- 0x2000 angular units.
- * Finally, begin a lunge toward x=1450, z=562 (near the gate).
+ * After release, keep hopping around instead of running the vanilla gate-break
+ * sequence.
  */
 static void chain_chomp_released_lunge_around(void) {
     chain_chomp_restore_normal_chain_lengths();
 
-    // Finish bounce
+    if (o->oMoveFlags & OBJ_MOVE_HIT_WALL) {
+        o->oMoveAngleYaw = cur_obj_reflect_move_angle_off_wall();
+    }
+
     if (o->oMoveFlags & OBJ_MOVE_MASK_ON_GROUND) {
-        // Before first bounce, turn toward mario and wait 2 seconds
-        if (o->oChainChompNumLunges == 0) {
-            if (cur_obj_rotate_yaw_toward(o->oAngleToMario, 800)) {
-                if (o->oTimer > 60) {
-                    o->oChainChompNumLunges++;
-                    // enable wall collision
-                    o->oWallHitboxRadius = 200.0f;
-                }
-            } else {
-                o->oTimer = 0;
-            }
-        } else {
-            if (++o->oChainChompNumLunges <= 5) {
-                cur_obj_play_sound_2(SOUND_GENERAL_CHAIN_CHOMP1);
-                o->oMoveAngleYaw = o->oAngleToMario + random_sign() * 0x2000;
-                o->oForwardVel = 30.0f;
-                o->oVelY = 50.0f;
-            } else {
-                o->oChainChompReleaseStatus = CHAIN_CHOMP_RELEASED_BREAK_GATE;
-                o->oHomeX = 1450.0f;
-                o->oHomeZ = 562.0f;
-                o->oMoveAngleYaw = cur_obj_angle_to_home();
-                o->oForwardVel = cur_obj_lateral_dist_to_home() / 8;
-                o->oVelY = 50.0f;
-            }
+        o->oWallHitboxRadius = 200.0f;
+
+        if (o->oTimer > 20) {
+            s16 randomYawOffset = (s16) ((random_u16() & 0x3FFF) - 0x2000);
+
+            cur_obj_play_sound_2(SOUND_GENERAL_CHAIN_CHOMP1);
+            o->oMoveAngleYaw = o->oAngleToMario + randomYawOffset;
+            o->oForwardVel = 25.0f + (random_u16() & 0xF);
+            o->oVelY = 45.0f + (random_u16() & 0x1F);
+            o->oChainChompNumLunges++;
+            o->oTimer = 0;
         }
     }
 }

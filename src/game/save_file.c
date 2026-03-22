@@ -6,6 +6,7 @@
 #include "audio/external.h"
 #include "engine/math_util.h"
 #include "area.h"
+#include "mario.h"
 #include "level_update.h"
 #include "save_file.h"
 #include "sound_init.h"
@@ -15,6 +16,7 @@
 #include "rumble_init.h"
 #include "config.h"
 #include "emutest.h"
+#include "camera.h"
 #ifdef SRAM
 #include "sram.h"
 #endif
@@ -392,36 +394,21 @@ void save_file_load_all(void) {
 
 /**
  * load_specific_save
- * Loads a specific save slot from EEPROM and replaces the current game state.
+ * Switches the active save slot for gameplay logic.
  *
- * @param slot Save slot to load (0 = Save 1, 1 = Save 2, 2 = Save 3, 3 = Save 4)
+ * @param slot Save slot to select (0 = Save 1, 1 = Save 2, 2 = Save 3, 3 = Save 4)
  */
 void load_specific_save(s32 slot) {
     if (slot < 0 || slot >= NUM_SAVE_FILES) return;
 
-    // Load all save files from EEPROM
-    save_file_load_all();
+    // Save files are already loaded into gSaveBuffer; just switch active index.
+    gCurrSaveFileNum = slot + 1;
 
-    // Set current save slot
-    gCurrSaveFileNum = slot;
-
-    // Restore primary copy if valid, otherwise restore backup
-    if (!verify_save_block_signature(&gSaveBuffer.files[slot][0],
-                                     sizeof(gSaveBuffer.files[slot][0]),
-                                     SAVE_FILE_MAGIC)) {
-        if (verify_save_block_signature(&gSaveBuffer.files[slot][1],
-                                        sizeof(gSaveBuffer.files[slot][1]),
-                                        SAVE_FILE_MAGIC)) {
-            restore_save_file_data(slot, 1);
-        } else {
-            save_file_erase(slot); // corrupted slot
-        }
-    } else {
-        restore_save_file_data(slot, 0);
+    // Keep Mario's runtime counters in sync with the newly-selected save slot.
+    if (gMarioState != NULL) {
+        gMarioState->numStars = save_file_get_total_star_count(gCurrSaveFileNum - 1, COURSE_MIN - 1, COURSE_MAX - 1);
+        gMarioState->prevNumStarsForDialog = gMarioState->numStars;
     }
-
-    // Done! gCurrSaveFileNum now points to the selected slot
-    // In-game objects, coins, health, MarioState etc. are NOT affected
 }
 
 #ifdef PUPPYCAM
@@ -715,6 +702,17 @@ void save_file_set_widescreen_mode(u8 mode) {
     save_main_menu_data();
 }
 #endif
+
+u32 save_file_get_modern_camera_mode(void) {
+    return gSaveBuffer.menuData.modernCameraMode;
+}
+
+void save_file_set_modern_camera_mode(u8 mode) {
+    gSaveBuffer.menuData.modernCameraMode = (mode != 0);
+
+    gMainMenuDataModified = TRUE;
+    save_main_menu_data();
+}
 
 u32 save_file_get_sound_mode(void) {
     if (gSaveBuffer.menuData.soundMode >= SOUND_MODE_COUNT) {

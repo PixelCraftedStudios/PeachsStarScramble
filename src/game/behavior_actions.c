@@ -51,6 +51,7 @@
 #include "behaviors/thi_top.inc.c"
 #include "behaviors/capswitch.inc.c"
 #include "behaviors/king_bobomb.inc.c"
+#include "behaviors/goomboss.inc.c"
 #include "behaviors/beta_chest.inc.c"
 #include "behaviors/water_objs.inc.c"
 #include "behaviors/cannon.inc.c"

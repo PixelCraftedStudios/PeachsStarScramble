@@ -111,6 +111,11 @@ s16 LENCOS(s16 length, s16 direction) {
     return (length * coss(direction));
 }
 
+static void puppycam_force_unified_analogue_mode(void) {
+    gPuppyCam.options.analogue = TRUE;
+    gPuppyCam.options.inputType = INPUT_SINGLE_PRESS;
+}
+
 static void puppycam_analogue_stick(void) {
 #ifdef TARGET_N64
     if (!gPuppyCam.options.analogue) {
@@ -137,6 +142,7 @@ void puppycam_default_config(void) {
     gPuppyCam.options.analogue = FALSE;
     gPuppyCam.options.inputType = INPUT_SINGLE_PRESS;
     gPuppyCam.options.turnHelper = TRUE;
+    puppycam_force_unified_analogue_mode();
 }
 
 // Initial setup. Ran at the beginning of the game and never again.
@@ -154,6 +160,7 @@ void puppycam_boot(void) {
     gPuppyCam.enabled       = TRUE;
 
     puppycam_get_save();
+    puppycam_force_unified_analogue_mode();
 }
 
 // Called when an instant warp is done.
@@ -321,6 +328,8 @@ void puppycam_change_setting(s8 toggle) {
 #if defined(VERSION_EU)
     newcam_set_language();
 #endif
+
+    puppycam_force_unified_analogue_mode();
 }
 
 void puppycam_print_text(s32 x, s32 y, unsigned char *str, s32 col) {
@@ -1209,6 +1218,7 @@ void puppycam_shake(UNUSED s16 x, UNUSED s16 y, UNUSED s16 z) {
 
 // The centrepiece behind the input side of PuppyCam. The C buttons branch off.
 static void puppycam_input_core(void) {
+    puppycam_force_unified_analogue_mode();
     puppycam_analogue_stick();
     gPuppyCam.movementPitchVel = 0;
 

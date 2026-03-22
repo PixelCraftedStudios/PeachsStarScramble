@@ -65,6 +65,10 @@ const LevelScript level_main_scripts_entry[] = {
     LOAD_RAW_WITH_CODE( /*seg*/ SEGMENT_COMMON1_GEO,   _common1_geoSegmentRomStart,  _common1_geoSegmentRomEnd, _common1_geoSegmentBssStart, _common1_geoSegmentBssEnd),
     LOAD_RAW_WITH_CODE( /*seg*/ SEGMENT_BEHAVIOR_DATA,    _behaviorSegmentRomStart,     _behaviorSegmentRomEnd,   _behaviorSegmentBssStart,     _behaviorSegmentBssEnd),
     ALLOC_LEVEL_POOL(),
+    LOAD_MODEL_FROM_GEO(MODEL_C2GATE, c2gate_geo),
+    LOAD_MODEL_FROM_GEO(MODEL_BOPPINGFLOWER, boppingFlower_geo),
+    LOAD_MODEL_FROM_GEO(MODEL__1STARBARRIER, _1StarBarrier_geo),
+    LOAD_MODEL_FROM_GEO(MODEL_POLICESHY, PoliceShy_geo),
     LOAD_MODEL_FROM_GEO(MODEL_TESTYOSHI, testyoshi_geo),
     LOAD_MODEL_FROM_GEO(MODEL_PENGBOSS, pengBoss_geo),
     LOAD_MODEL_FROM_GEO(MODEL_PIRANHAALT, piranhaalt_geo),
@@ -76,7 +80,7 @@ const LevelScript level_main_scripts_entry[] = {
     LOAD_MODEL_FROM_GEO(MODEL_SSL_PALM_TREE,           palm_tree_geo),
     LOAD_MODEL_FROM_GEO(MODEL_BOUNCEPAD, bouncePad_geo),
     LOAD_MODEL_FROM_GEO(MODEL_BOUNCINGSHROOM, bouncingShroom_geo),
-    LOAD_MODEL_FROM_GEO(MODEL_SHROOMBOSS, shroomBoss_geo),
+    LOAD_MODEL_FROM_GEO(MODEL_GOOMBOSS, goomboss_geo),
 
     LOAD_MODEL_FROM_GEO(MODEL_MARIO,                   mario_geo),
     

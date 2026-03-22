@@ -1,0 +1,3 @@
+enum PoliceshyAnims {
+	POLICESHY_ANIM_ARMATUREACTION,
+};

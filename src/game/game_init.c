@@ -7,6 +7,7 @@
 #include "buffers/gfx_output_buffer.h"
 #include "buffers/framebuffers.h"
 #include "buffers/zbuffer.h"
+#include "camera.h"
 #include "engine/level_script.h"
 #include "engine/math_util.h"
 #include "game_init.h"
@@ -800,6 +801,7 @@ void thread5_game_loop(UNUSED void *arg) {
 #ifdef WIDE
     gConfig.widescreen = save_file_get_widescreen_mode();
 #endif
+    gModernCameraEnabled = save_file_get_modern_camera_mode();
 
     while (TRUE) {
         if (sSingleThreadOtherFrame) {

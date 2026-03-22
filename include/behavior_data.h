@@ -48,6 +48,7 @@ extern const BehaviorScript bhvExitPodiumWarp[];
 extern const BehaviorScript bhvFadingWarp[];
 extern const BehaviorScript bhvWarp[];
 extern const BehaviorScript bhvWarpPipe[];
+extern const BehaviorScript bhvSaveFilePipe[];
 extern const BehaviorScript bhvWhitePuffExplosion[];
 extern const BehaviorScript bhvSpawnedStar[];
 extern const BehaviorScript bhvSpawnedStarNoLevelExit[];
@@ -549,9 +550,17 @@ extern const BehaviorScript bhvFirePlatform[];
 extern const BehaviorScript bhvBreakableMHBox[];
 extern const BehaviorScript bhvSilverStar[];
 extern const BehaviorScript bhvBobombStar[];
+extern const BehaviorScript bhvGoomboss[];
 extern const BehaviorScript bhvGoombaMassive[];
 extern const BehaviorScript bhvRGBLight[];
 extern const BehaviorScript bhvPointLight[];
+extern const BehaviorScript bhvNoSun[];
+extern const BehaviorScript bhvPurpleButtonBomb[];
+extern const BehaviorScript bhvC2Gate[];
+extern const BehaviorScript bhvInstantWarpZone[];
+extern const BehaviorScript bhvPoliceShy[];
+extern const BehaviorScript bhv1StarBarrier[];
+extern const BehaviorScript bhvBoppingFlower[];
 /*CUSTOM BHV*/
 
 #endif // BEHAVIOR_DATA_H

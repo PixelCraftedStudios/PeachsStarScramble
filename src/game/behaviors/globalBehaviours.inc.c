@@ -7,13 +7,28 @@ extern const Vec4s wf_area_1_spline_RockPath[];
 #include "game/interaction.h"
 #include "game/segment2.h"
 #include "game/game_init.h"
+#include "game/level_update.h"
+#include "game/area.h"
+#include "game/save_file.h"
+#include "game/camera.h"
 
 
 extern struct MarioState *gMarioState;
+extern u8 gBombButtonCutsceneRequested;
 
 // Forward declarations
 void bhv_rgb_light_loop(void);
 void bhv_point_light_loop(void);
+void bhv_no_sun_loop(void);
+void bhv_purple_button_bomb_loop(void);
+void bhvC2Gate_loop(void);
+
+#define C2_GATE_ACT_IDLE 0
+#define C2_GATE_ACT_LOWERING 1
+#define C2_GATE_ACT_LOWERED 2
+
+#define C2_GATE_DEFAULT_DROP_DISTANCE 1800.0f
+#define C2_GATE_DROP_SPEED 4.0f
 
 // Global RGB lighting
 extern u8 gRGBLightActive;
@@ -47,6 +62,8 @@ extern PointLightData gPointLights[MAX_POINT_LIGHTS];
 extern u8 gPointLightCount;
 extern u32 gLastPointLightTimer;
 extern f32 gPointLightInfluence;
+extern u8 gNoSunActive;
+extern u32 gLastNoSunTimer;
 extern u8 gLensFlareLightActive;
 extern u8 gLensFlareLightR;
 extern u8 gLensFlareLightG;
@@ -112,47 +129,19 @@ void bhv_silver_star_loop(void) {
 
 void bhv_bobomb_star_loop(void) {
     switch (o->oAction) {
-        // ACTION 0: Spawn 5 Bob-ombs in a circle
         case 0:
-            if (o->oTimer == 0) {
-                f32 radius = 300.0f;
-                s16 angles[5];
+            o->oHiddenStarTriggerCounter = 0;
+            o->oAction = 1;
+            break;
 
-                for (s32 i = 0; i < 5; i++) {
-                    s16 angle;
-                    s32 valid;
-                    s32 attempts = 0;
-
-                    // Pick spaced angles to prevent overlapping
-                    do {
-                        valid = TRUE;
-                        angle = random_u16();
-                        for (s32 j = 0; j < i; j++) {
-                            u16 diff = (u16)(angle - angles[j]);
-                            if (diff > 0x8000) diff = 0x10000 - diff;
-                            if (diff < 0x2000) valid = FALSE;
-                        }
-                        attempts++;
-                    } while (!valid && attempts < 20);
-
-                    angles[i] = angle;
-
-                    // Spawn Bob-omb
-                    struct Object *bobomb = spawn_object(o, MODEL_BLACK_BOBOMB, bhvBobomb);
-                    bobomb->oPosX = o->oPosX + sins(angle) * radius;
-                    bobomb->oPosY = o->oPosY;
-                    bobomb->oPosZ = o->oPosZ + coss(angle) * radius;
-
-                    bobomb->oHomeX = bobomb->oPosX;
-                    bobomb->oHomeY = bobomb->oPosY;
-                    bobomb->oHomeZ = bobomb->oPosZ;
-                    bobomb->oMoveAngleYaw = angle;
-
-                    // Link the Bob-omb to this spawner
-                    bobomb->parentObj = o;
-                }
+        case 1:
+            if (o->oHiddenStarTriggerCounter >= 5) {
+                spawn_star_with_id(o->oPosX, o->oPosY + 0.0f, o->oPosZ, o->oBehParams2ndByte);
+                spawn_mist_particles();
+                o->activeFlags = ACTIVE_FLAG_DEACTIVATED;
             }
-}
+            break;
+    }
 }
 
 void bhv_rgb_light_loop(void) {
@@ -249,15 +238,127 @@ void bhv_point_light_loop(void) {
     gPointLights[gPointLightCount].pos[2] = o->oPosZ;
     gPointLights[gPointLightCount].radius = radius;
 
-    if (!gLensFlareLightActive) {
-        gLensFlareLightPos[0] = o->oPosX;
-        gLensFlareLightPos[1] = o->oPosY;
-        gLensFlareLightPos[2] = o->oPosZ;
-        gLensFlareLightR = r;
-        gLensFlareLightG = g;
-        gLensFlareLightB = b;
-        gLensFlareLightActive = TRUE;
+    gPointLightCount++;
+}
+
+static f32 c2_gate_get_drop_distance(void) {
+    u8 dropDistanceParam = GET_BPARAM1(o->oBehParams);
+
+    if (dropDistanceParam != 0) {
+        return dropDistanceParam * 50.0f;
     }
 
-    gPointLightCount++;
+    return C2_GATE_DEFAULT_DROP_DISTANCE;
+}
+
+void bhvC2Gate_loop(void) {
+    f32 targetY = o->oHomeY - c2_gate_get_drop_distance();
+
+    switch (o->oAction) {
+        case C2_GATE_ACT_IDLE:
+            break;
+
+        case C2_GATE_ACT_LOWERING:
+            o->oPosY -= C2_GATE_DROP_SPEED;
+            if (o->oPosY <= targetY) {
+                o->oPosY = targetY;
+                o->oAction = C2_GATE_ACT_LOWERED;
+            }
+            break;
+
+        case C2_GATE_ACT_LOWERED:
+            o->oPosY = targetY;
+            break;
+    }
+}
+
+void bhv_purple_button_bomb_loop(void) {
+    switch (o->oAction) {
+        case PURPLE_SWITCH_ACT_IDLE:
+            cur_obj_set_model(MODEL_PURPLE_SWITCH);
+            cur_obj_scale(1.5f);
+            if (
+                gMarioObject->platform == o
+                && !(gMarioStates[0].action & MARIO_NO_PURPLE_SWITCH)
+                && lateral_dist_between_objects(o, gMarioObject) < 127.5f
+            ) {
+                o->oAction = PURPLE_SWITCH_ACT_PRESSED;
+            }
+            break;
+
+        case PURPLE_SWITCH_ACT_PRESSED:
+            cur_obj_scale_over_time(SCALE_AXIS_Y, 3, 1.5f, 0.2f);
+            if (o->oTimer == 3) {
+                struct Object *gate = cur_obj_nearest_object_with_behavior(bhvC2Gate);
+
+                cur_obj_play_sound_2(SOUND_GENERAL2_PURPLE_SWITCH);
+                gBombButtonCutsceneRequested = TRUE;
+
+                if (gate != NULL && gate->oAction == C2_GATE_ACT_IDLE) {
+                    gate->oAction = C2_GATE_ACT_LOWERING;
+                    play_puzzle_jingle();
+                }
+
+                o->oAction = PURPLE_SWITCH_ACT_TICKING;
+            }
+            break;
+
+        case PURPLE_SWITCH_ACT_TICKING:
+            // Already triggered — stay compressed, do nothing
+            break;
+    }
+}
+
+void bhv_no_sun_loop(void) {
+    if (gGlobalTimer != gLastNoSunTimer) {
+        gNoSunActive = FALSE;
+        gLastNoSunTimer = gGlobalTimer;
+    }
+
+    gNoSunActive = TRUE;
+}
+
+// Rectangular warp zone: BPARAM1=half-width (XZ), BPARAM2=warp node ID, BPARAM3=half-height (Y).
+// Teleports Mario instantly (no transition) when he enters the box.
+// Each bparam value is multiplied by 50 to get game units (e.g. bparam=4 -> 200 units each side).
+// Place the object at the CENTER of the desired trigger volume.
+void bhv_instant_warp_zone_loop(void) {
+    f32 halfW  = (f32)BPARAM1 * 50.0f;
+    f32 halfH  = (f32)BPARAM3 * 50.0f;
+    s16 warpId = (s16)BPARAM2;
+
+    f32 dx = gMarioState->pos[0] - o->oPosX;
+    f32 dy = gMarioState->pos[1] - o->oPosY;
+    f32 dz = gMarioState->pos[2] - o->oPosZ;
+
+    if (absf(dx) < halfW && absf(dy) < halfH && absf(dz) < halfW
+            && sDelayedWarpOp == WARP_OP_NONE) {
+        gMarioState->invincTimer = -1;
+        sDelayedWarpArg          = WARP_FLAGS_NONE;
+        sDelayedWarpTimer        = 20;
+        sSourceWarpNodeId        = warpId;
+        sDelayedWarpOp           = WARP_OP_TELEPORT;
+        play_transition(WARP_TRANSITION_FADE_INTO_COLOR, sDelayedWarpTimer, 0xFF, 0xFF, 0xFF);
+    }
+}
+
+// Warp pipe that also switches the active save file to BPARAM1 (0x01=file1 ... 0x04=file4).
+void bhv_save_file_pipe_loop(void) {
+    if (o->oInteractStatus & INT_STATUS_INTERACTED) {
+        s16 fileNum = (s16)GET_BPARAM1(o->oBehParams);
+        if (fileNum >= 1 && fileNum <= 4) {
+            load_specific_save(fileNum - 1);
+        }
+    }
+    o->oInteractStatus = INT_STATUS_NONE;
+}
+
+void bhv_1_star_barrier_loop(void) {
+    if (gMarioState == NULL) {
+        return;
+    }
+
+    if (gMarioState->numStars >= 1) {
+        obj_mark_for_deletion(o);
+    }
 }

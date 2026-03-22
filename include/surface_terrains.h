@@ -226,8 +226,17 @@ enum SurfaceTypes {
     SURFACE_00FE,                       // 0x00FE // Unused
     SURFACE_TRAPDOOR,                   // 0x00FF // Bowser Left trapdoor, has no action defined
     SURFACE_TRIPLEJUMP,                   // 0x0100 // Triple jump surface
-    SURFACE_NOISE_NONSLIPPERY,             // 0x0101 // Non-slippery floor with noise, used in SL
+    SURFACE_NOISE_NONSLIPPERY,            // 0x0101 // Non-slippery floor with noise, used in SL
+    SURFACE_GRIND_RAIL,                   // 0x0102 // Pushes Mario along floor force direction, hold B to speed up
+    SURFACE_CONVEYOR_SHORT_EDGE,          // 0x0103 // Pushes Mario along the triangle's shortest edge; force optionally sets speed
+    SURFACE_DOUBLE_SIDED_WALL,            // 0x0104 // Wall that collides from both normal directions
 };
+
+// Custom: hard, non-slippery floor that can drive reveal effects in Mario code.
+#define SURFACE_HARD_NOT_SLIPPERY_REVEAL SURFACE_0039
+
+// Custom: hard, non-slippery floor that uses metal step sounds.
+#define SURFACE_HARD_NOT_SLIPPERY_METAL SURFACE_003A
 
 // From Surface 0x1B to 0x1E
 #define INSTANT_WARP_INDEX_START  0x00 // Equal and greater than Surface 0x1B
@@ -235,7 +244,7 @@ enum SurfaceTypes {
 
 #define SURFACE_IS_NEW_WATER(cmd)               (((cmd) == SURFACE_NEW_WATER) || ((cmd) == SURFACE_NEW_WATER_BOTTOM))
 #define SURFACE_IS_QUICKSAND(cmd)               ((((cmd) >= SURFACE_SHALLOW_QUICKSAND) && ((cmd) <= SURFACE_MOVING_QUICKSAND)) || ((cmd) == SURFACE_INSTANT_MOVING_QUICKSAND))
-#define SURFACE_IS_NOT_HARD(cmd)                (((cmd) != SURFACE_HARD) && !((cmd) >= SURFACE_HARD_SLIPPERY && ((cmd) <= SURFACE_HARD_NOT_SLIPPERY)))
+#define SURFACE_IS_NOT_HARD(cmd)                (((cmd) != SURFACE_HARD) && !((cmd) >= SURFACE_HARD_SLIPPERY && ((cmd) <= SURFACE_HARD_NOT_SLIPPERY)) && ((cmd) != SURFACE_HARD_NOT_SLIPPERY_REVEAL) && ((cmd) != SURFACE_HARD_NOT_SLIPPERY_METAL))
 #define SURFACE_IS_PAINTING_WOBBLE(cmd)         (((cmd) >= SURFACE_PAINTING_WOBBLE_A6) && ((cmd) <= SURFACE_PAINTING_WOBBLE_D2))
 #define SURFACE_IS_PAINTING_WOBBLE_LEFT(cmd)    ((((cmd) - SURFACE_PAINTING_WOBBLE_A6) % 3) == 0)
 #define SURFACE_IS_PAINTING_WOBBLE_MIDDLE(cmd)  ((((cmd) - SURFACE_PAINTING_WOBBLE_A7) % 3) == 0)

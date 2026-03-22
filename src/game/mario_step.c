@@ -65,6 +65,46 @@ void stub_mario_step_1(UNUSED struct MarioState *x) {
  */
 void stub_mario_step_2(void) {
 }
+
+static s32 get_surface_edge_yaw(struct Surface *surface, s32 useShortestEdge, s16 referenceYaw,
+                                s16 *edgeYaw) {
+    f32 edgeDx[3];
+    f32 edgeDz[3];
+    f32 edgeLenSq[3];
+    s32 bestIndex;
+    s32 index;
+
+    edgeDx[0] = surface->vertex2[0] - surface->vertex1[0];
+    edgeDz[0] = surface->vertex2[2] - surface->vertex1[2];
+    edgeDx[1] = surface->vertex3[0] - surface->vertex2[0];
+    edgeDz[1] = surface->vertex3[2] - surface->vertex2[2];
+    edgeDx[2] = surface->vertex1[0] - surface->vertex3[0];
+    edgeDz[2] = surface->vertex1[2] - surface->vertex3[2];
+
+    edgeLenSq[0] = sqr(edgeDx[0]) + sqr(edgeDz[0]);
+    edgeLenSq[1] = sqr(edgeDx[1]) + sqr(edgeDz[1]);
+    edgeLenSq[2] = sqr(edgeDx[2]) + sqr(edgeDz[2]);
+
+    bestIndex = 0;
+    for (index = 1; index < 3; index++) {
+        if ((!useShortestEdge && edgeLenSq[index] > edgeLenSq[bestIndex])
+            || (useShortestEdge && edgeLenSq[index] < edgeLenSq[bestIndex])) {
+            bestIndex = index;
+        }
+    }
+
+    if (edgeLenSq[bestIndex] < 1.0f) {
+        return FALSE;
+    }
+
+    *edgeYaw = atan2s(edgeDx[bestIndex], edgeDz[bestIndex]);
+
+    if (abs_angle_diff(*edgeYaw, referenceYaw) > 0x4000) {
+        *edgeYaw += 0x8000;
+    }
+
+    return TRUE;
+}
 // --------------------------------------------------------------------------
 // Floor/Ceiling Raycast (slope-safe, no freezing, no false hits)
 // --------------------------------------------------------------------------
@@ -311,6 +351,58 @@ u32 mario_update_windy_ground(struct MarioState *m) {
     return FALSE;
 }
 
+u32 mario_update_short_edge_conveyor(struct MarioState *m) {
+    struct Surface *floor = m->floor;
+    s16 conveyorAngle;
+    f32 conveyorSpeed;
+
+    if (floor->type != SURFACE_CONVEYOR_SHORT_EDGE) {
+        return FALSE;
+    }
+
+    if (!get_surface_edge_yaw(floor, TRUE, m->faceAngle[1], &conveyorAngle)) {
+        return FALSE;
+    }
+
+    conveyorSpeed = floor->force;
+    if (conveyorSpeed < 0.0f) {
+        conveyorSpeed = -conveyorSpeed;
+    }
+    if (conveyorSpeed == 0.0f) {
+        conveyorSpeed = 4.0f;
+    }
+
+    m->vel[0] += conveyorSpeed * sins(conveyorAngle);
+    m->vel[2] += conveyorSpeed * coss(conveyorAngle);
+
+    return TRUE;
+}
+
+u32 mario_update_grind_rail(struct MarioState *m) {
+    struct Surface *floor = m->floor;
+    s16 railAngle;
+
+    if (floor->type == SURFACE_GRIND_RAIL) {
+        if (!get_surface_edge_yaw(floor, FALSE, m->faceAngle[1], &railAngle)) {
+            return FALSE;
+        }
+
+        // Slow fixed-speed travel along the longest edge direction.
+        f32 railSpeed = 6.0f;
+
+        m->faceAngle[1] = railAngle;
+        m->slideYaw = railAngle;
+        mario_set_forward_vel(m, railSpeed);
+
+        m->vel[0] = railSpeed * sins(railAngle);
+        m->vel[2] = railSpeed * coss(railAngle);
+
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 void stop_and_set_height_to_floor(struct MarioState *m) {
     struct Object *marioObj = m->marioObj;
 
@@ -332,7 +424,8 @@ s32 stationary_ground_step(struct MarioState *m) {
 
     mario_set_forward_vel(m, 0.0f);
 
-    u32 takeStep = (mario_update_moving_sand(m) | mario_update_windy_ground(m));
+    u32 takeStep = (mario_update_moving_sand(m) | mario_update_windy_ground(m)
+                 | mario_update_short_edge_conveyor(m) | mario_update_grind_rail(m));
     if (takeStep) {
         stepResult = perform_ground_step(m);
     } else {

@@ -1255,6 +1255,11 @@
 #define /*0x0FC*/ oYoshiChosenHome OBJECT_FIELD_S32(0x1D)
 #define /*0x100*/ oYoshiTargetYaw  OBJECT_FIELD_S32(0x1E)
 
+/* Goomboss */
+#define /*0x0F4*/ oGoombossThrowTimer  OBJECT_FIELD_S32(0x1B) // countdown between bob-omb throws
+#define /*0x0F8*/ oGoombossHitCooldown OBJECT_FIELD_S32(0x1C) // invulnerability frames after an explosion hit
+#define /*0x0FC*/ oGoombossBlinkTimer  OBJECT_FIELD_S32(0x1D) // eye-blink timer
+
 
 /*Custom general defines:
 

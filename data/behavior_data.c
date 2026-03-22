@@ -893,6 +893,23 @@ const BehaviorScript bhvWarpPipe[] = {
     END_LOOP(),
 };
 
+void bhv_save_file_pipe_loop(void);
+
+// Warp pipe that switches to save file BPARAM1 (1-4) when Mario enters.
+const BehaviorScript bhvSaveFilePipe[] = {
+    BEGIN(OBJ_LIST_SURFACE),
+    OR_INT(oFlags, (OBJ_FLAG_SET_FACE_YAW_TO_MOVE_YAW | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+    SET_INT(oInteractType, INTERACT_WARP),
+    LOAD_COLLISION_DATA(warp_pipe_seg3_collision_03009AC8),
+    SET_FLOAT(oDrawingDistance, 16000),
+    SET_INT(oIntangibleTimer, 0),
+    SET_HITBOX(/*Radius*/ 70, /*Height*/ 50),
+    CALL_NATIVE(load_object_static_model),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_save_file_pipe_loop),
+    END_LOOP(),
+};
+
 const BehaviorScript bhvWhitePuffExplosion[] = {
     BEGIN(OBJ_LIST_UNIMPORTANT),
     OR_INT(oFlags, OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE),
@@ -3484,6 +3501,8 @@ const BehaviorScript bhvToadMessage[] = {
         CALL_NATIVE(bhv_toad_message_loop),
     END_LOOP(),
 };
+
+
 
 const BehaviorScript bhvUnlockDoorStar[] = {
     BEGIN(OBJ_LIST_LEVEL),
@@ -6155,6 +6174,7 @@ void bhv_bobomb_star_loop(void);
 void bhv_goomba_massive_init(void);
 void bhv_rgb_light_loop(void);
 void bhv_point_light_loop(void);
+void bhv_no_sun_loop(void);
 
 const BehaviorScript bhvBobombStar[] = {
     BEGIN(OBJ_LIST_LEVEL),
@@ -6164,6 +6184,23 @@ const BehaviorScript bhvBobombStar[] = {
         CALL_NATIVE(bhv_bobomb_star_loop),
     END_LOOP(),
 };
+const BehaviorScript bhvGoomboss[] = {
+    BEGIN(OBJ_LIST_GENACTOR),
+    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_ANGLE_TO_MARIO | OBJ_FLAG_ACTIVE_FROM_AFAR | OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_SET_FACE_YAW_TO_MOVE_YAW | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+    LOAD_ANIMATIONS(oAnimations, goomboss_anims),
+    SET_INT(oInteractType, INTERACT_BOUNCE_TOP),
+    SET_HITBOX(/*Radius*/ 200, /*Height*/ 250),
+    SET_OBJ_PHYSICS(/*Wall hitbox radius*/ 60, /*Gravity*/ -400, /*Bounciness*/ -50, /*Drag strength*/ 1000, /*Friction*/ 1000, /*Buoyancy*/ 0, /*Unused*/ 0, 0),
+    SET_INT(oIntangibleTimer, 0),
+    //DROP_TO_FLOOR(),
+    SET_HOME(),
+    SET_INT(oHealth, 3),
+    SET_INT(oDamageOrCoinValue, 3),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_goomboss_loop),
+    END_LOOP(),
+};
+
 const BehaviorScript bhvGoombaMassive[] = {
     BEGIN(OBJ_LIST_PUSHABLE),
     OR_INT(oFlags, (OBJ_FLAG_COMPUTE_ANGLE_TO_MARIO | OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_SET_FACE_YAW_TO_MOVE_YAW | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
@@ -6190,5 +6227,84 @@ const BehaviorScript bhvPointLight[] = {
     OR_INT(oFlags, (OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
     BEGIN_LOOP(),
         CALL_NATIVE(bhv_point_light_loop),
+    END_LOOP(),
+};
+
+const BehaviorScript bhvNoSun[] = {
+    BEGIN(OBJ_LIST_LEVEL),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_no_sun_loop),
+    END_LOOP(),
+};
+
+void bhv_purple_button_bomb_loop(void);
+
+const BehaviorScript bhvPurpleButtonBomb[] = {
+    BEGIN(OBJ_LIST_SURFACE),
+    OR_INT(oFlags, OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE),
+    LOAD_COLLISION_DATA(purple_switch_seg8_collision_0800C7A8),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_purple_button_bomb_loop),
+        CALL_NATIVE(load_object_collision_model),
+    END_LOOP(),
+};
+
+void bhvC2Gate_loop(void);
+
+const BehaviorScript bhvC2Gate[] = {
+    BEGIN(OBJ_LIST_SURFACE),
+    OR_INT(oFlags, (OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE | OBJ_FLAG_ACTIVE_FROM_AFAR | OBJ_FLAG_DISABLE_RENDER_CULL)),
+    SET_FLOAT(oDrawingDistance, 90000),
+    LOAD_COLLISION_DATA(c2gate_collision),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhvC2Gate_loop),
+        CALL_NATIVE(load_object_collision_model),
+    END_LOOP(),
+};
+
+void bhv_instant_warp_zone_loop(void);
+
+const BehaviorScript bhvInstantWarpZone[] = {
+    BEGIN(OBJ_LIST_LEVEL),
+    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_instant_warp_zone_loop),
+    END_LOOP(),
+};
+const BehaviorScript bhvPoliceShy[] = {
+    BEGIN(OBJ_LIST_GENACTOR),
+    OR_INT(oFlags, (OBJ_FLAG_PERSISTENT_RESPAWN | OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_SET_FACE_YAW_TO_MOVE_YAW | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+    LOAD_ANIMATIONS(oAnimations, PoliceShy_anims),
+    ANIMATE(POLICESHY_ANIM_ARMATUREACTION),
+    SET_INTERACT_TYPE(INTERACT_TEXT),
+    SET_HITBOX(/*Radius*/ 80, /*Height*/ 100),
+    SET_INT(oIntangibleTimer, 0),
+    CALL_NATIVE(bhv_init_room),
+    CALL_NATIVE(bhv_toad_message_init),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_toad_message_loop),
+    END_LOOP(),
+};
+void bhv_1_star_barrier_loop(void);
+
+const BehaviorScript bhv1StarBarrier[] = {
+    BEGIN(OBJ_LIST_SURFACE),
+    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+    LOAD_COLLISION_DATA(_1StarBarrier_collision),
+    SET_HOME(),
+    BEGIN_LOOP(),
+        CALL_NATIVE(bhv_1_star_barrier_loop),
+        CALL_NATIVE(load_object_collision_model),
+    END_LOOP(),
+};
+
+const BehaviorScript bhvBoppingFlower[] = {
+    BEGIN(OBJ_LIST_GENACTOR),
+    OR_INT(oFlags, (OBJ_FLAG_COMPUTE_ANGLE_TO_MARIO | OBJ_FLAG_COMPUTE_DIST_TO_MARIO | OBJ_FLAG_SET_FACE_YAW_TO_MOVE_YAW | OBJ_FLAG_UPDATE_GFX_POS_AND_ANGLE)),
+    LOAD_ANIMATIONS(oAnimations, boppingFlower_anims),
+    ANIMATE(BOPPINGFLOWER_ANIM_FLOWER_BOP),
+    SET_HOME(),
+    BEGIN_LOOP(),
+        //no code
     END_LOOP(),
 };

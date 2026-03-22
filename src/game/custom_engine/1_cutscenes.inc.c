@@ -64,13 +64,23 @@ static struct CutsceneEvent sCourtyardEvents[] = {
         },
     },
 };
-static struct CutsceneEvent sShellshockEvents[] = {
-
+static struct CutsceneEvent sBombButtonEvents[] = {
+    {
+        .type = CUTSCENE_EVENT_SPLINE,
+        .spline = { wf_area_1_spline_oscam, wf_area_1_spline_osfoc },
+    },
 };
-
+static struct CutsceneEvent sGoombombEvents[] = {
+    {
+        .type = CUTSCENE_EVENT_SPLINE,
+        .spline = { wf_area_1_spline_cam1, wf_area_1_spline_foc1 },
+    },
+};
 
 static struct CustomCutscene sCustomCutscenes[CUSTOM_CUTSCENE_MAX] = {
     [CUSTOM_CUTSCENE_MH] = { sMHEvents, ARRAY_COUNT(sMHEvents) },
     [CUSTOM_CUTSCENE_COURTYARD] = { sCourtyardEvents, ARRAY_COUNT(sCourtyardEvents) },
-    [CUSTOM_CUTSCENE_SHELLSHOCK] = { sShellshockEvents, ARRAY_COUNT(sShellshockEvents) },
+    [CUSTOM_CUTSCENE_BOMBBUTTON] = { sBombButtonEvents, ARRAY_COUNT(sBombButtonEvents) },
+    [CUSTOM_CUTSCENE_GOOMBOMB] = { sGoombombEvents, ARRAY_COUNT(sGoombombEvents) },
+
 };

@@ -57,7 +57,7 @@ const LevelScript level_thi_entry[] = {
 		OBJECT(MODEL_THI_WARP_PIPE, 2084, -119, 1477, 0, 0, 0, (0x01 << 16), bhvWarpPipe),
 		OBJECT(MODEL_THI_WARP_PIPE, 4045, -25, 1323, 0, 0, 0, (0x03 << 16), bhvWarpPipe),
 		OBJECT(MODEL_THI_WARP_PIPE, 2074, -119, 1881, 0, 0, 0, (0x04 << 16), bhvWarpPipe),
-		OBJECT(MODEL_THI_WARP_PIPE, 3752, -25, 1318, 0, 0, 0, (0x05 << 16), bhvWarpPipe),
+		OBJECT(MODEL_THI_WARP_PIPE, -27, -154, -1003, 0, 0, 0, (0x05 << 16), bhvWarpPipe),
 		TERRAIN(thi_area_1_collision),
 		MACRO_OBJECTS(thi_area_1_macro_objs),
 		STOP_MUSIC(0),

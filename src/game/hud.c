@@ -766,8 +766,22 @@ void render_letterbox(void);
 
 void render_hud(void) {
     s16 hudDisplayFlags = gHudDisplay.flags;
-    s32 shouldRenderOverlay = (hudDisplayFlags != HUD_DISPLAY_NONE) || gLensFlareLightActive;
     update_letterbox();
+
+    if (gCurrLevelNum == LEVEL_CASTLE_COURTYARD) {
+        sPowerMeterHUD.animation = POWER_METER_HIDDEN;
+        sPowerMeterStoredHealth = 8;
+        sPowerMeterVisibleTimer = 0;
+#ifdef BREATH_METER
+        sBreathMeterHUD.animation = BREATH_METER_HIDDEN;
+        sBreathMeterStoredValue = 8;
+        sBreathMeterVisibleTimer = 0;
+#endif
+        render_letterbox();
+        return;
+    }
+
+    s32 shouldRenderOverlay = (hudDisplayFlags != HUD_DISPLAY_NONE) || gLensFlareLightActive;
     if (hudDisplayFlags == HUD_DISPLAY_NONE) {
         sPowerMeterHUD.animation = POWER_METER_HIDDEN;
         sPowerMeterStoredHealth = 8;

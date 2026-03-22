@@ -54,6 +54,7 @@ enum SeqId {
     SEQ_MARIOHOUSE,  // 0x29
     SEQ_FRAPPE_SNOWLAND,  // 0x2A
     SEQ_FOREST,  // 0x2B
+    SEQ_FILE_SEL,  // 0x2C
     SEQ_COUNT,
 };
 

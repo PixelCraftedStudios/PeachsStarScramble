@@ -126,6 +126,14 @@ void bobomb_spawn_coin(void) {
 // -----------------------------
 
 void bobomb_act_explode(void) {
+    if (o->oTimer == 0) {
+        struct Object *bobombStar = cur_obj_nearest_object_with_behavior(bhvBobombStar);
+
+        if (bobombStar != NULL) {
+            bobombStar->oHiddenStarTriggerCounter++;
+        }
+    }
+
     if (o->oTimer < 5) {
         cur_obj_scale(1.0f + ((f32) o->oTimer / 5.0f));
     } else {

@@ -1,0 +1,10 @@
+extern const GeoLayout c2gate_geo[];
+extern u8 c2gate_bars_ci8[];
+extern u8 c2gate_bars_pal_rgba16[];
+extern Vtx c2gate_Cube_mesh_layer_5_vtx_cull[8];
+extern Vtx c2gate_Cube_mesh_layer_5_vtx_0[24];
+extern Gfx c2gate_Cube_mesh_layer_5_tri_0[];
+extern Gfx mat_c2gate_f3dlite_material_003[];
+extern Gfx mat_revert_c2gate_f3dlite_material_003[];
+extern Gfx c2gate_Cube_mesh_layer_5[];
+extern Gfx c2gate_final_revert_mesh_layer_5[];

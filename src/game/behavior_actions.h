@@ -441,6 +441,7 @@ void bhv_fly_guy_update(void);
 void bhv_goomba_init(void);
 void bhv_goomba_update(void);
 void bhv_goomba_triplet_spawner_update(void);
+void bhv_goomboss_loop(void);
 void bhv_chain_chomp_update(void);
 void bhv_chain_chomp_chain_part_update(void);
 void bhv_wooden_post_update(void);

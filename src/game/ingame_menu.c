@@ -1143,6 +1143,8 @@ s16 gCutsceneMsgDuration    = -1;
 s16 gCutsceneMsgTimer       =  0;
 s8  gDialogCameraAngleIndex = CAM_SELECTION_MARIO;
 s8  gDialogCourseActNum     =  1;
+s8  gStarSelectTheme        =  0;
+static s8 gPauseSettingsOpen = FALSE;
 
 #define DIAG_VAL1  16
 #define DIAG_VAL3 132 // US & EU
@@ -1667,6 +1669,52 @@ void render_pause_my_score_coins(void) {
 
     u8 courseIndex = COURSE_NUM_TO_INDEX(gCurrCourseNum);
     u8 starFlags = save_file_get_star_flags(gCurrSaveFileNum - 1, COURSE_NUM_TO_INDEX(gCurrCourseNum));
+    s16 pulse = sins(gGlobalTimer * 0x1000);
+    u8 panelR = 24;
+    u8 panelG = 46;
+    u8 panelB = 88;
+
+    switch (gStarSelectTheme) {
+        case 0:
+            panelR = 24; panelG = 46; panelB = 88;   // sapphire
+            break;
+        case 1:
+            panelR = 20; panelG = 86; panelB = 46;   // emerald
+            break;
+        case 2:
+            panelR = 88; panelG = 30; panelB = 30;   // crimson
+            break;
+        default:
+            panelR = 76; panelG = 48; panelB = 18;   // amber
+            break;
+    }
+
+    // Full-screen themed wash so each menu open has a clearly different vibe.
+    create_dl_translation_matrix(MENU_MTX_PUSH, 160.0f, 120.0f, 0);
+    create_dl_scale_matrix(MENU_MTX_NOPUSH, 8.0f, 5.5f, 1.0f);
+    gDPSetEnvColor(gDisplayListHead++, panelR, panelG, panelB, 34 + (pulse * 10.0f));
+    gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
+
+    // Layered panel behind the star-select text for better readability.
+    create_dl_translation_matrix(MENU_MTX_PUSH, 160.0f, 146.0f, 0);
+    create_dl_scale_matrix(MENU_MTX_NOPUSH, 1.95f, 0.95f, 1.0f);
+    gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, 92);
+    gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
+
+    create_dl_translation_matrix(MENU_MTX_PUSH, 160.0f, 146.0f, 0);
+    create_dl_scale_matrix(MENU_MTX_NOPUSH, 1.85f, 0.90f, 1.0f);
+    gDPSetEnvColor(gDisplayListHead++, panelR, panelG, panelB, 58 + (pulse * 12.0f));
+    gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
+
+    // Accent stripe that changes palette each time the menu opens.
+    create_dl_translation_matrix(MENU_MTX_PUSH, 160.0f, 123.0f, 0);
+    create_dl_scale_matrix(MENU_MTX_NOPUSH, 1.85f, 0.11f, 1.0f);
+    gDPSetEnvColor(gDisplayListHead++, panelR + 40, panelG + 30, panelB + 20, 110 + (pulse * 10.0f));
+    gSPDisplayList(gDisplayListHead++, dl_draw_text_bg_box);
+    gSPPopMatrix(gDisplayListHead++, G_MTX_MODELVIEW);
 
     gSPDisplayList(gDisplayListHead++, dl_rgba16_text_begin);
     gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, gDialogTextAlpha);
@@ -1683,27 +1731,56 @@ void render_pause_my_score_coins(void) {
 
     if (courseIndex <= COURSE_NUM_TO_INDEX(COURSE_STAGES_MAX)
         && (save_file_get_course_star_count(gCurrSaveFileNum - 1, courseIndex) != 0)) {
+        gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, gDialogTextAlpha);
+        print_generic_string(MYSCORE_X + 1, 120, LANGUAGE_ARRAY(textMyScore));
+        gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, gDialogTextAlpha);
         print_generic_string(MYSCORE_X, 121, LANGUAGE_ARRAY(textMyScore));
     }
 
     u8 *courseName = segmented_to_virtual(courseNameTbl[courseIndex]);
 
     if (courseIndex <= COURSE_NUM_TO_INDEX(COURSE_STAGES_MAX)) {
+        gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, gDialogTextAlpha);
+        print_generic_string(TXT_COURSE_X + 1, 156, LANGUAGE_ARRAY(textCourse));
+        gDPSetEnvColor(gDisplayListHead++, 250,
+                   220 + (sins(gGlobalTimer * 0x0E00) * 20.0f),
+                   110 + (sins(gGlobalTimer * 0x1200) * 20.0f), gDialogTextAlpha);
         print_generic_string(TXT_COURSE_X, 157, LANGUAGE_ARRAY(textCourse));
         int_to_str(gCurrCourseNum, strCourseNum);
+        gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, gDialogTextAlpha);
+        print_generic_string(CRS_NUM_X1 + 1, 156, strCourseNum);
+        gDPSetEnvColor(gDisplayListHead++, 255, 246, 180, gDialogTextAlpha);
         print_generic_string(CRS_NUM_X1, 157, strCourseNum);
 
         u8 *actName = segmented_to_virtual(actNameTbl[COURSE_NUM_TO_INDEX(gCurrCourseNum) * 6 + gDialogCourseActNum - 1]);
 
         if (starFlags & (1 << (gDialogCourseActNum - 1))) {
+            gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, gDialogTextAlpha);
+            print_generic_string(TXT_STAR_X + 1, 139, textStar);
+            gDPSetEnvColor(gDisplayListHead++, 255,
+                           215 + (sins(gGlobalTimer * 0x1400) * 18.0f),
+                           70 + (sins(gGlobalTimer * 0x1400) * 10.0f), gDialogTextAlpha);
             print_generic_string(TXT_STAR_X, 140, textStar);
         } else {
+            gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, gDialogTextAlpha);
+            print_generic_string(TXT_STAR_X + 1, 139, textUnfilledStar);
+            gDPSetEnvColor(gDisplayListHead++, 180, 180, 180, gDialogTextAlpha);
             print_generic_string(TXT_STAR_X, 140, textUnfilledStar);
         }
 
+        gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, gDialogTextAlpha);
+        print_generic_string(ACT_NAME_X + 1, 139, actName);
+        print_generic_string(LVL_NAME_X + 1, 156, &courseName[3]);
+        gDPSetEnvColor(gDisplayListHead++, 255,
+                       235 + (sins(gGlobalTimer * 0x0C00) * 12.0f),
+                       170 + (sins(gGlobalTimer * 0x1000) * 14.0f), gDialogTextAlpha);
         print_generic_string(ACT_NAME_X, 140, actName);
+        gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, gDialogTextAlpha);
         print_generic_string(LVL_NAME_X, 157, &courseName[3]);
     } else {
+        gDPSetEnvColor(gDisplayListHead++, 0, 0, 0, gDialogTextAlpha);
+        print_generic_string(SECRET_LVL_NAME_X + 1, 156, &courseName[3]);
+        gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, gDialogTextAlpha);
         print_generic_string(SECRET_LVL_NAME_X, 157, &courseName[3]);
     }
 
@@ -1776,6 +1853,41 @@ void render_pause_course_options(s16 x, s16 y, s8 *index, s16 yIndex) {
     if (*index == MENU_OPT_CAMERA_ANGLE_R) {
         render_pause_camera_options(x - 42, y - 42, &gDialogCameraAngleIndex, 110);
     }
+}
+
+static void render_pause_settings_menu(void) {
+    u8 textSettings[] = {
+        ASCII_TO_DIALOG('S'), ASCII_TO_DIALOG('E'), ASCII_TO_DIALOG('T'), ASCII_TO_DIALOG('T'),
+        ASCII_TO_DIALOG('I'), ASCII_TO_DIALOG('N'), ASCII_TO_DIALOG('G'), ASCII_TO_DIALOG('S'),
+        DIALOG_CHAR_TERMINATOR
+    };
+    u8 textModernCamera[] = {
+        ASCII_TO_DIALOG('M'), ASCII_TO_DIALOG('O'), ASCII_TO_DIALOG('D'), ASCII_TO_DIALOG('E'),
+        ASCII_TO_DIALOG('R'), ASCII_TO_DIALOG('N'), DIALOG_CHAR_SPACE,
+        ASCII_TO_DIALOG('C'), ASCII_TO_DIALOG('A'), ASCII_TO_DIALOG('M'), ASCII_TO_DIALOG('E'),
+        ASCII_TO_DIALOG('R'), ASCII_TO_DIALOG('A'), DIALOG_CHAR_TERMINATOR
+    };
+    u8 textStateOn[] = {
+        ASCII_TO_DIALOG('O'), ASCII_TO_DIALOG('N'), DIALOG_CHAR_TERMINATOR
+    };
+    u8 textStateOff[] = {
+        ASCII_TO_DIALOG('O'), ASCII_TO_DIALOG('F'), ASCII_TO_DIALOG('F'), DIALOG_CHAR_TERMINATOR
+    };
+    u8 textHint[] = {
+        ASCII_TO_DIALOG('A'), DIALOG_CHAR_SPACE, ASCII_TO_DIALOG('T'), ASCII_TO_DIALOG('O'),
+        ASCII_TO_DIALOG('G'), ASCII_TO_DIALOG('G'), ASCII_TO_DIALOG('L'), ASCII_TO_DIALOG('E'),
+        DIALOG_CHAR_SPACE, ASCII_TO_DIALOG('R'), DIALOG_CHAR_SPACE, ASCII_TO_DIALOG('B'),
+        ASCII_TO_DIALOG('A'), ASCII_TO_DIALOG('C'), ASCII_TO_DIALOG('K'), DIALOG_CHAR_TERMINATOR
+    };
+
+    shade_screen();
+    gSPDisplayList(gDisplayListHead++, dl_ia_text_begin);
+    gDPSetEnvColor(gDisplayListHead++, 255, 255, 255, gDialogTextAlpha);
+    print_generic_string(110, 165, textSettings);
+    print_generic_string(78, 140, textModernCamera);
+    print_generic_string(220, 140, gModernCameraEnabled ? textStateOn : textStateOff);
+    print_generic_string(76, 112, textHint);
+    gSPDisplayList(gDisplayListHead++, dl_ia_text_end);
 }
 
 void render_pause_castle_menu_box(s16 x, s16 y) {
@@ -1940,7 +2052,9 @@ s32 render_pause_courses_and_castle(void) {
     puppycam_check_pause_buttons();
     if (!gPCOptionOpen) {
 #endif
-    switch (gDialogBoxState) {
+    if (gPauseSettingsOpen) {
+        render_pause_settings_menu();
+    } else switch (gDialogBoxState) {
         case DIALOG_STATE_VERTICAL:
             shade_screen();
             render_pause_my_score_coins();
@@ -1990,12 +2104,14 @@ s32 logic_pause_courses_and_castle(void) {
         case DIALOG_STATE_OPENING:
             gDialogLineNum = MENU_OPT_DEFAULT;
             gDialogTextAlpha = 0;
+            gPauseSettingsOpen = FALSE;
             level_set_transition(-1, NULL);
             play_sound(SOUND_MENU_PAUSE_OPEN, gGlobalSoundSource);
 
             if (gCurrCourseNum >= COURSE_MIN
              && gCurrCourseNum <= COURSE_MAX) {
                 change_dialog_camera_angle();
+                gStarSelectTheme = random_u16() & 0x3;
                 gDialogBoxState = DIALOG_STATE_VERTICAL;
             } else {
                 highlight_last_course_complete_stars();
@@ -2004,6 +2120,23 @@ s32 logic_pause_courses_and_castle(void) {
             break;
 
         case DIALOG_STATE_VERTICAL:
+            if (gPauseSettingsOpen) {
+                if (gPlayer1Controller->buttonPressed & (R_TRIG | B_BUTTON | START_BUTTON)) {
+                    play_sound(SOUND_MENU_PAUSE_CLOSE, gGlobalSoundSource);
+                    gPauseSettingsOpen = FALSE;
+                } else if (gPlayer1Controller->buttonPressed & (A_BUTTON | L_CBUTTONS | R_CBUTTONS)) {
+                    save_file_set_modern_camera_mode(!gModernCameraEnabled);
+                    gModernCameraEnabled = save_file_get_modern_camera_mode();
+                    play_sound_cbutton_side();
+                }
+                break;
+            }
+
+            if (gPlayer1Controller->buttonPressed & R_TRIG) {
+                play_sound(SOUND_MENU_PAUSE_OPEN, gGlobalSoundSource);
+                gPauseSettingsOpen = TRUE;
+                break;
+            }
         
 #ifndef DISABLE_EXIT_COURSE
 #ifdef EXIT_COURSE_WHILE_MOVING

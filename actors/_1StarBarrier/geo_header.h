@@ -1,0 +1,16 @@
+extern const GeoLayout _1StarBarrier_geo[];
+extern u8 _1StarBarrier__0x4C20_ci8_ci8[];
+extern u8 _1StarBarrier__0x4C20_ci8_pal_rgba16[];
+extern u8 _1StarBarrier_segment2_00200_rgba16_ci4[];
+extern u8 _1StarBarrier_segment2_00200_rgba16_pal_rgba16[];
+extern Vtx _1StarBarrier_Cube_mesh_layer_4_vtx_cull[8];
+extern Vtx _1StarBarrier_Cube_mesh_layer_4_vtx_0[24];
+extern Gfx _1StarBarrier_Cube_mesh_layer_4_tri_0[];
+extern Vtx _1StarBarrier_Cube_mesh_layer_4_vtx_1[4];
+extern Gfx _1StarBarrier_Cube_mesh_layer_4_tri_1[];
+extern Gfx mat_1StarBarrier_f3dlite_material_018[];
+extern Gfx mat_revert_1StarBarrier_f3dlite_material_018[];
+extern Gfx mat_1StarBarrier_f3dlite_material_019[];
+extern Gfx mat_revert_1StarBarrier_f3dlite_material_019[];
+extern Gfx _1StarBarrier_Cube_mesh_layer_4[];
+extern Gfx _1StarBarrier_final_revert_mesh_layer_4[];

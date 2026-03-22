@@ -579,6 +579,9 @@ u8 gPointLightCount = 0;
 u32 gLastPointLightTimer = 0;
 f32 gPointLightInfluence = 1.0f;  // How much point lights affect ambient
 
+u8 gNoSunActive = FALSE;
+u32 gLastNoSunTimer = 0;
+
 u8 gLensFlareLightActive = FALSE;
 u8 gLensFlareLightR = 0xFF;
 u8 gLensFlareLightG = 0xFF;
@@ -613,17 +616,24 @@ static s32 find_closest_rgb_light_to_mario(void) {
 
 void setup_global_light(void) {
     static u8 sSmoothCol[3] = { 255, 255, 255 };
+    static u8 sSmoothAmbientCol[3] = { 0, 0, 0 };
     static s8 sSmoothDir[3] = { 40, 40, 40 };
     static u8 sSmoothInit = FALSE;
     static s32 sSelectedLight = -1;
     s32 flareLightIndex = -1;
-    s32 flarePointLightIndex = -1;
     s32 dominantPointLightIndex = -1;
     s32 activeLightIndex = -1;
     f32 dominantPointLightStrength = 0.0f;
     f32 pointDirectWeight = 0.0f;
+    u8 disableSunLights;
+    u8 rgbLightsThisFrame;
+    u8 pointLightsThisFrame;
+    u8 noSunThisFrame;
+    s32 rgbAge;
+    s32 pointAge;
+    s32 noSunAge;
     u8 hasTargetLight = FALSE;
-    u8 targetCol[3] = { 255, 255, 255 };
+    u8 targetCol[3] = { 0, 0, 0 };
     s8 targetDir[3] = { 40, 40, 40 };
 
     Lights1 *curLight = (Lights1 *)alloc_display_list(sizeof(Lights1));
@@ -632,41 +642,50 @@ void setup_global_light(void) {
         return;
     }
 
-    if (gRGBLightActive) {
-        if (gRGBLightCount > 0) {
-            activeLightIndex = (gMarioState && gRGBLightCount > 1) ? find_closest_rgb_light_to_mario() : 0;
-            if (activeLightIndex < 0) {
-                activeLightIndex = 0;
+    rgbAge = (s32)(gGlobalTimer - gLastRGBLightTimer);
+    pointAge = (s32)(gGlobalTimer - gLastPointLightTimer);
+    noSunAge = (s32)(gGlobalTimer - gLastNoSunTimer);
+
+    rgbLightsThisFrame = (rgbAge >= 0 && rgbAge <= 1) && gRGBLightActive && (gRGBLightCount > 0);
+    pointLightsThisFrame = (pointAge >= 0 && pointAge <= 1) && (gPointLightCount > 0);
+    noSunThisFrame = (noSunAge >= 0 && noSunAge <= 1) || gNoSunActive;
+
+    if (!(noSunAge >= 0 && noSunAge <= 1)) {
+        gNoSunActive = FALSE;
+        noSunThisFrame = FALSE;
+    }
+
+    disableSunLights = noSunThisFrame;
+
+    if (!disableSunLights && rgbLightsThisFrame) {
+        activeLightIndex = (gMarioState && gRGBLightCount > 1) ? find_closest_rgb_light_to_mario() : 0;
+        if (activeLightIndex < 0) {
+            activeLightIndex = 0;
+        }
+
+        flareLightIndex = activeLightIndex;
+        targetCol[0] = gRGBLights[activeLightIndex].r;
+        targetCol[1] = gRGBLights[activeLightIndex].g;
+        targetCol[2] = gRGBLights[activeLightIndex].b;
+
+        if (gMarioState) {
+            f32 dx = gRGBLights[activeLightIndex].pos[0] - gMarioState->pos[0];
+            f32 dy = gRGBLights[activeLightIndex].pos[1] - gMarioState->pos[1];
+            f32 dz = gRGBLights[activeLightIndex].pos[2] - gMarioState->pos[2];
+            f32 mag = sqrtf(dx * dx + dy * dy + dz * dz);
+
+            if (mag > 0.001f) {
+                dx /= mag;
+                dy /= mag;
+                dz /= mag;
+                targetDir[0] = (s8)(dx * 127.0f);
+                targetDir[1] = (s8)(dy * 127.0f);
+                targetDir[2] = (s8)(dz * 127.0f);
             }
-
-            flareLightIndex = activeLightIndex;
-            targetCol[0] = gRGBLights[activeLightIndex].r;
-            targetCol[1] = gRGBLights[activeLightIndex].g;
-            targetCol[2] = gRGBLights[activeLightIndex].b;
-
-            if (gMarioState) {
-                f32 dx = gRGBLights[activeLightIndex].pos[0] - gMarioState->pos[0];
-                f32 dy = gRGBLights[activeLightIndex].pos[1] - gMarioState->pos[1];
-                f32 dz = gRGBLights[activeLightIndex].pos[2] - gMarioState->pos[2];
-                f32 mag = sqrtf(dx * dx + dy * dy + dz * dz);
-
-                if (mag > 0.001f) {
-                    dx /= mag;
-                    dy /= mag;
-                    dz /= mag;
-                    targetDir[0] = (s8)(dx * 127.0f);
-                    targetDir[1] = (s8)(dy * 127.0f);
-                    targetDir[2] = (s8)(dz * 127.0f);
-                }
-            }
-        } else {
-            targetCol[0] = gRGBLightR;
-            targetCol[1] = gRGBLightG;
-            targetCol[2] = gRGBLightB;
         }
 
         hasTargetLight = TRUE;
-    } else if (gRGBLightCount > 0 && gMarioState) {
+    } else if (!disableSunLights && rgbLightsThisFrame && gMarioState) {
         s32 closest = find_closest_rgb_light_to_mario();
 
         if (sSelectedLight < 0 || sSelectedLight >= gRGBLightCount) {
@@ -718,13 +737,7 @@ void setup_global_light(void) {
     u8 pointLightBlendCol[3] = { 0, 0, 0 };
     f32 totalPointLightInfluence = 0.0f;
 
-    if (gPointLightCount > 0) {
-        if (flarePointLightIndex < 0) {
-            flarePointLightIndex = 0;
-        }
-    }
-
-    if (gMarioState && gPointLightCount > 0) {
+    if (gMarioState && pointLightsThisFrame) {
         f32 bestPointInfluence = 0.0f;
 
         for (s32 i = 0; i < gPointLightCount; i++) {
@@ -746,7 +759,6 @@ void setup_global_light(void) {
 
                 if (falloff > bestPointInfluence) {
                     bestPointInfluence = falloff;
-                    flarePointLightIndex = i;
                     dominantPointLightIndex = i;
                     dominantPointLightStrength = falloff;
                 }
@@ -825,21 +837,17 @@ void setup_global_light(void) {
         }
     }
 
-    if (flareLightIndex >= 0 && flareLightIndex < gRGBLightCount) {
+    if (disableSunLights) {
+        gLensFlareLightActive = FALSE;
+        gLensFlareLightVisibility = 0.0f;
+    } else if (flareLightIndex >= 0 && flareLightIndex < gRGBLightCount) {
         gLensFlareLightActive = TRUE;
         gLensFlareLightR = gRGBLights[flareLightIndex].r;
         gLensFlareLightG = gRGBLights[flareLightIndex].g;
         gLensFlareLightB = gRGBLights[flareLightIndex].b;
         vec3f_copy(gLensFlareLightPos, gRGBLights[flareLightIndex].pos);
         gLensFlareLightVisibility = 1.0f;
-    } else if (flarePointLightIndex >= 0 && flarePointLightIndex < gPointLightCount) {
-        gLensFlareLightActive = TRUE;
-        gLensFlareLightR = gPointLights[flarePointLightIndex].r;
-        gLensFlareLightG = gPointLights[flarePointLightIndex].g;
-        gLensFlareLightB = gPointLights[flarePointLightIndex].b;
-        vec3f_copy(gLensFlareLightPos, gPointLights[flarePointLightIndex].pos);
-        gLensFlareLightVisibility = 1.0f;
-    } else if (gRGBLightCount == 0 && gPointLightCount == 0) {
+    } else if (!rgbLightsThisFrame && !pointLightsThisFrame) {
         gLensFlareLightActive = FALSE;
         gLensFlareLightVisibility = 0.0f;
     }
@@ -848,37 +856,54 @@ void setup_global_light(void) {
         sSmoothCol[0] = targetCol[0];
         sSmoothCol[1] = targetCol[1];
         sSmoothCol[2] = targetCol[2];
+        sSmoothAmbientCol[0] = targetCol[0];
+        sSmoothAmbientCol[1] = targetCol[1];
+        sSmoothAmbientCol[2] = targetCol[2];
         sSmoothDir[0] = targetDir[0];
         sSmoothDir[1] = targetDir[1];
         sSmoothDir[2] = targetDir[2];
         sSmoothInit = TRUE;
     } else {
+        u8 ambientTargetCol[3] = { 0, 0, 0 };
+
+        if (totalPointLightInfluence > 0.0f) {
+            // Blend authored directional light, if any, with the local point-light contribution.
+            s32 col0 = (hasTargetLight ? (s32)targetCol[0] / 2 : 0) + (s32)(pointLightBlendCol[0] * totalPointLightInfluence * (gPointLightInfluence + 1.0f));
+            s32 col1 = (hasTargetLight ? (s32)targetCol[1] / 2 : 0) + (s32)(pointLightBlendCol[1] * totalPointLightInfluence * (gPointLightInfluence + 1.0f));
+            s32 col2 = (hasTargetLight ? (s32)targetCol[2] / 2 : 0) + (s32)(pointLightBlendCol[2] * totalPointLightInfluence * (gPointLightInfluence + 1.0f));
+
+            ambientTargetCol[0] = (col0 > 255) ? 255 : (col0 < 0) ? 0 : (u8)col0;
+            ambientTargetCol[1] = (col1 > 255) ? 255 : (col1 < 0) ? 0 : (u8)col1;
+            ambientTargetCol[2] = (col2 > 255) ? 255 : (col2 < 0) ? 0 : (u8)col2;
+        } else if (hasTargetLight) {
+            ambientTargetCol[0] = targetCol[0];
+            ambientTargetCol[1] = targetCol[1];
+            ambientTargetCol[2] = targetCol[2];
+        }
+
         for (s32 i = 0; i < 3; i++) {
             sSmoothCol[i] = (u8)(((s32)sSmoothCol[i] * 7 + (s32)targetCol[i]) / 8);
-            sSmoothDir[i] = (s8)(((s32)sSmoothDir[i] * 15 + (s32)targetDir[i]) / 16);
+            sSmoothAmbientCol[i] = (u8)(((s32)sSmoothAmbientCol[i] * 7 + (s32)ambientTargetCol[i]) / 8);
+
+            if (hasTargetLight) {
+                sSmoothDir[i] = (s8)(((s32)sSmoothDir[i] * 15 + (s32)targetDir[i]) / 16);
+            }
         }
     }
 
-    // Apply point light influence to ambient
-    u8 ambientCol[3];
-    if (totalPointLightInfluence > 0.0f) {
-        // Blend with sunlight - do arithmetic in s32 to avoid overflow
-        s32 col0 = (hasTargetLight ? (s32)sSmoothCol[0] / 2 : 60) + (s32)(pointLightBlendCol[0] * totalPointLightInfluence * (gPointLightInfluence + 1.0f));
-        s32 col1 = (hasTargetLight ? (s32)sSmoothCol[1] / 2 : 60) + (s32)(pointLightBlendCol[1] * totalPointLightInfluence * (gPointLightInfluence + 1.0f));
-        s32 col2 = (hasTargetLight ? (s32)sSmoothCol[2] / 2 : 60) + (s32)(pointLightBlendCol[2] * totalPointLightInfluence * (gPointLightInfluence + 1.0f));
-        // Clamp to 0-255
-        ambientCol[0] = (col0 > 255) ? 255 : (col0 < 0) ? 0 : (u8)col0;
-        ambientCol[1] = (col1 > 255) ? 255 : (col1 < 0) ? 0 : (u8)col1;
-        ambientCol[2] = (col2 > 255) ? 255 : (col2 < 0) ? 0 : (u8)col2;
-    } else {
-        ambientCol[0] = hasTargetLight ? sSmoothCol[0] : 80;
-        ambientCol[1] = hasTargetLight ? sSmoothCol[1] : 80;
-        ambientCol[2] = hasTargetLight ? sSmoothCol[2] : 80;
+    // Cut lighting immediately when no source is currently contributing.
+    if (!hasTargetLight && totalPointLightInfluence <= 0.0f) {
+        sSmoothCol[0] = 0;
+        sSmoothCol[1] = 0;
+        sSmoothCol[2] = 0;
+        sSmoothAmbientCol[0] = 0;
+        sSmoothAmbientCol[1] = 0;
+        sSmoothAmbientCol[2] = 0;
     }
 
-    curLight->l->l.col[0] = hasTargetLight ? sSmoothCol[0] : 255;
-    curLight->l->l.col[1] = hasTargetLight ? sSmoothCol[1] : 255;
-    curLight->l->l.col[2] = hasTargetLight ? sSmoothCol[2] : 255;
+    curLight->l->l.col[0] = sSmoothCol[0];
+    curLight->l->l.col[1] = sSmoothCol[1];
+    curLight->l->l.col[2] = sSmoothCol[2];
     curLight->l->l.colc[0] = curLight->l->l.col[0];
     curLight->l->l.colc[1] = curLight->l->l.col[1];
     curLight->l->l.colc[2] = curLight->l->l.col[2];
@@ -886,9 +911,9 @@ void setup_global_light(void) {
     curLight->l->l.dir[1] = sSmoothDir[1];
     curLight->l->l.dir[2] = sSmoothDir[2];
 
-    curLight->a.l.col[0] = ambientCol[0];
-    curLight->a.l.col[1] = ambientCol[1];
-    curLight->a.l.col[2] = ambientCol[2];
+    curLight->a.l.col[0] = sSmoothAmbientCol[0];
+    curLight->a.l.col[1] = sSmoothAmbientCol[1];
+    curLight->a.l.col[2] = sSmoothAmbientCol[2];
     curLight->a.l.colc[0] = curLight->a.l.col[0];
     curLight->a.l.colc[1] = curLight->a.l.col[1];
     curLight->a.l.colc[2] = curLight->a.l.col[2];

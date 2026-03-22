@@ -712,6 +712,7 @@ struct LakituState {
 extern s16 sSelectionFlags;
 extern s16 sCameraSoundFlags;
 extern u16 sCButtonsPressed;
+extern s8 gModernCameraEnabled;
 extern struct PlayerCameraState gPlayerCameraState[2];
 extern struct LakituState gLakituState;
 extern s16 gCameraMovementFlags;
@@ -814,7 +815,8 @@ typedef enum {
     CUSTOM_CUTSCENE_NONE = 0,
     CUSTOM_CUTSCENE_MH,
     CUSTOM_CUTSCENE_COURTYARD,
-    CUSTOM_CUTSCENE_SHELLSHOCK,
+    CUSTOM_CUTSCENE_BOMBBUTTON,
+    CUSTOM_CUTSCENE_GOOMBOMB,
     CUSTOM_CUTSCENE_MAX
 } CustomCutsceneID;
 
